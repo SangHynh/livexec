@@ -14,13 +14,14 @@ const config = {
     TIMEOUT_MS: 5000,
     MEMORY_LIMIT_MB: 128,
     MAX_OUTPUT_SIZE: 1024 * 1024, // 1MB
+    MAX_SOURCE_CODE_SIZE_KB: 50,
   },
 
   // Rate limiting (Hardcoded as not in .env.example)
   RATE_LIMIT: {
-    EXECUTIONS_PER_MINUTE: 10,
+    EXECUTIONS_PER_MINUTE: 30,
     SESSIONS_PER_MINUTE: 60,
-    GLOBAL_PER_MINUTE: 100,
+    GLOBAL_PER_MINUTE: 500,
     MAX_EXECUTIONS_PER_SESSION: 50,
   },
 
