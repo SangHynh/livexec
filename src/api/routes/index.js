@@ -9,10 +9,10 @@ const router = Router();
  * Health check route
  */
 router.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   });
 });
 

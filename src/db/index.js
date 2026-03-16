@@ -21,9 +21,9 @@ const ensureDatabaseExists = async () => {
   }
   const dbName = config.DATABASE_URL.split('/').pop().split('?')[0];
   const rootUrl = config.DATABASE_URL.replace(`/${dbName}`, '/postgres');
-  
+
   const tempPool = new Pool({ connectionString: rootUrl });
-  
+
   try {
     const result = await tempPool.query(
       `SELECT 1 FROM pg_database WHERE datname = $1`,
@@ -48,16 +48,19 @@ const ensureDatabaseExists = async () => {
  */
 const runMigrations = async () => {
   await ensureDatabaseExists();
-  
+
   const migrationsDir = path.join(__dirname, 'migrations');
-  const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
+  const files = fs
+    .readdirSync(migrationsDir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort();
 
   console.log('Running database migrations...');
 
   for (const file of files) {
     const filePath = path.join(migrationsDir, file);
     const sql = fs.readFileSync(filePath, 'utf8');
-    
+
     try {
       await pool.query(sql);
       console.log(`Migration ${file} executed successfully`);
@@ -66,7 +69,7 @@ const runMigrations = async () => {
       throw error;
     }
   }
-  
+
   console.log('All migrations completed');
 };
 

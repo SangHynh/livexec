@@ -35,4 +35,10 @@ class NoContentResponse extends ApiResponse {
   }
 }
 
-export { ApiResponse, OkResponse, CreatedResponse, AcceptedResponse, NoContentResponse };
+export {
+  ApiResponse,
+  OkResponse,
+  CreatedResponse,
+  AcceptedResponse,
+  NoContentResponse,
+};
