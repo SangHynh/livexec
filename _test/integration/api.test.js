@@ -1,16 +1,45 @@
 import request from 'supertest';
 import app from '../../src/app.js';
 import { pool } from '../../src/db/index.js';
+import consumerManager from '../../src/queue/consumer.js';
+import executionService from '../../src/services/execution.service.js';
+import sessionService from '../../src/services/session.service.js';
+import sandboxRunner from '../../src/sandbox/runner.js';
+import redisConnection from '../../src/config/redis.js';
 
 describe('API Integration Tests', () => {
   let sessionId;
+  let testWorker;
 
   beforeAll(async () => {
-    // Clean up or ensure DB is ready if needed
+    await sandboxRunner.prepare();
+    
+    // Start a test worker to process jobs during integration tests
+    const processExecution = async (job) => {
+      const { executionId, sessionId } = job.data;
+      try {
+        await executionService.updateExecution(executionId, { status: 'RUNNING', started_at: true });
+        const session = await sessionService.getSession(sessionId);
+        const result = await sandboxRunner.run(session.language, session.source_code);
+        await executionService.updateExecution(executionId, {
+          status: result.status,
+          stdout: result.stdout,
+          stderr: result.stderr,
+          execution_time_ms: result.execution_time_ms,
+          completed_at: true
+        });
+      } catch (error) {
+        await executionService.updateExecution(executionId, { status: 'FAILED', error_message: error.message, completed_at: true });
+      }
+    };
+
+    testWorker = consumerManager.initConsumer(processExecution);
   });
 
   afterAll(async () => {
+    if (testWorker) await testWorker.close();
     await pool.end();
+    await redisConnection.quit();
   });
 
   test('TC-2.1.1: Should create a new code session', async () => {
@@ -97,13 +126,16 @@ describe('API Integration Tests', () => {
     let attempts = 0;
     while (status !== 'COMPLETED' && status !== 'FAILED' && attempts < 20) {
       const res = await request(app).get(`/executions/${executionId}`);
-      status = res.body.data.status;
-      if (status === 'COMPLETED' || status === 'FAILED') {
-        // Verify TC-2.2.1: Accurate storage
-        expect(res.body.data).toHaveProperty('stdout');
-        expect(res.body.data).toHaveProperty('execution_time_ms');
-        break;
+      
+      if (res.body && res.body.data) {
+        status = res.body.data.status;
+        if (status === 'COMPLETED' || status === 'FAILED') {
+          expect(res.body.data).toHaveProperty('stdout');
+          expect(res.body.data).toHaveProperty('execution_time_ms');
+          break;
+        }
       }
+      
       await new Promise(r => setTimeout(r, 500));
       attempts++;
     }

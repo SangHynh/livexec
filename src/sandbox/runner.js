@@ -1,4 +1,4 @@
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -34,9 +34,10 @@ class SandboxRunner {
     const workingDir = path.join(this.tempDir, executionId);
     
     // 1. Setup file extensions and commands
+    const isWindows = process.platform === 'win32';
     const fileConfigs = {
       javascript: { ext: 'js', cmd: 'node' },
-      python: { ext: 'py', cmd: 'python' },
+      python: { ext: 'py', cmd: isWindows ? 'py' : 'python3' },
     };
 
     const runConfig = fileConfigs[language];
@@ -56,45 +57,84 @@ class SandboxRunner {
       await fs.writeFile(filePath, sourceCode);
 
       const startTime = process.hrtime();
+      let child;
 
-      // 3. Execute code using child_process
+      // 3. Execute code using spawn for better control
       const result = await new Promise((resolve) => {
-        const timeout = config.SANDBOX_TIMEOUT_MS || 5000;
+        const timeoutMs = config.SANDBOX_TIMEOUT_MS || 5000;
         
-        const child = exec(`${runConfig.cmd} ${filePath}`, {
-          timeout,
-          maxBuffer: 1024 * 1024, // 1MB buffer limit
+        child = spawn(runConfig.cmd, [filePath], {
           cwd: workingDir,
+          detached: !isWindows, // Detached mode is different on Windows
           env: {
             ...process.env,
             FORCE_COLOR: '0',
             NODE_DISABLE_COLORS: '1',
             PYTHONUNBUFFERED: '1'
           }
-        }, (error, stdout, stderr) => {
+        });
+
+        let stdout = '';
+        let stderr = '';
+        let killed = false;
+
+        const timeout = setTimeout(() => {
+          killed = true;
+          try {
+            if (isWindows) {
+              // On Windows, use taskkill to kill the entire tree
+              spawn('taskkill', ['/F', '/T', '/PID', child.pid]);
+            } else {
+              // Kill the entire process group on Unix
+              process.kill(-child.pid, 'SIGKILL');
+            }
+          } catch (e) {
+            // Process might have already exited
+          }
+        }, timeoutMs);
+
+        child.stdout.on('data', (data) => {
+          stdout += data.toString();
+        });
+
+        child.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+
+        child.on('error', (err) => {
+          clearTimeout(timeout);
           const endTime = process.hrtime(startTime);
           const executionTimeMs = Math.round((endTime[0] * 1000) + (endTime[1] / 1000000));
+          resolve({
+            status: 'FAILED',
+            stdout: this.stripAnsi(stdout),
+            stderr: this.stripAnsi(stderr || err.message),
+            execution_time_ms: executionTimeMs
+          });
+        });
 
-          // Clean up ANSI codes if any still leak through
+        child.on('exit', (code, signal) => {
+          clearTimeout(timeout);
+          const endTime = process.hrtime(startTime);
+          const executionTimeMs = Math.round((endTime[0] * 1000) + (endTime[1] / 1000000));
+          
           const cleanStdout = this.stripAnsi(stdout);
           const cleanStderr = this.stripAnsi(stderr);
 
-          if (error) {
-            if (error.killed) {
-              resolve({
-                status: 'TIMEOUT',
-                stdout: cleanStdout,
-                stderr: cleanStderr + `\nExecution timed out after ${timeout}ms`,
-                execution_time_ms: executionTimeMs
-              });
-            } else {
-              resolve({
-                status: 'FAILED',
-                stdout: cleanStdout,
-                stderr: cleanStderr || error.message,
-                execution_time_ms: executionTimeMs
-              });
-            }
+          if (killed) {
+            resolve({
+              status: 'TIMEOUT',
+              stdout: cleanStdout,
+              stderr: cleanStderr + `\nExecution timed out after ${timeoutMs}ms`,
+              execution_time_ms: executionTimeMs
+            });
+          } else if (code !== 0) {
+            resolve({
+              status: 'FAILED',
+              stdout: cleanStdout,
+              stderr: cleanStderr || `Process exited with code ${code}`,
+              execution_time_ms: executionTimeMs
+            });
           } else {
             resolve({
               status: 'COMPLETED',
@@ -115,6 +155,17 @@ class SandboxRunner {
         execution_time_ms: 0
       };
     } finally {
+      // Emergency kill to release file handles before deletion
+      try {
+        if (isWindows) {
+          spawn('taskkill', ['/F', '/T', '/PID', child.pid]);
+        } else {
+          process.kill(-child.pid, 'SIGKILL');
+        }
+      } catch (e) {
+        // Ignored
+      }
+
       // 4. Cleanup working directory with retry logic for Windows
       let retries = 3;
       while (retries > 0) {

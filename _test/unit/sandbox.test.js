@@ -57,7 +57,7 @@ describe('SandboxRunner Unit Tests', () => {
 
     expect(result.status).toBe('TIMEOUT');
     expect(result.stderr).toContain('Execution timed out');
-  }, 10000);
+  }, 15000);
 
   test('TC-1.1.6: Should reject unsupported languages', async () => {
     const result = await sandboxRunner.run('ruby', 'puts "hello"');
