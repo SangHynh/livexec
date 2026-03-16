@@ -4,6 +4,7 @@ import consumerManager from './src/queue/consumer.js';
 import executionService from './src/services/execution.service.js';
 import sessionService from './src/services/session.service.js';
 import sandboxRunner from './src/sandbox/runner.js';
+import config from './src/config/index.js';
 
 dotenv.config();
 
@@ -20,9 +21,24 @@ const startWorker = async () => {
     // 3. Job processor logic
     const processExecution = async (job) => {
       const { executionId, sessionId } = job.data;
+      const jobTimestamp = job.timestamp;
+      const ageMs = Date.now() - jobTimestamp;
+      const ttlMs = config.QUEUE?.JOB_TTL_MS || 60000;
+
       console.log(
-        `Processing execution ${executionId} (Session: ${sessionId})`
+        `Processing execution ${executionId} (Session: ${sessionId}). Age: ${ageMs}ms`
       );
+
+      // --- Security/Resilience Layer: Job Expiration Check ---
+      if (ageMs > ttlMs) {
+        console.warn(`[EXPIRED] Job ${executionId} is too old. Skipping.`);
+        await executionService.updateExecution(executionId, {
+          status: 'FAILED',
+          error_message: `Queue timeout: Execution skipped because it was pending for too long (${ageMs}ms).`,
+          completed_at: true,
+        });
+        return;
+      }
 
       try {
         // Step A: Update status to RUNNING

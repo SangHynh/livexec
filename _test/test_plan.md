@@ -45,6 +45,7 @@
 - [x] **TC-4.1.2**: Stdout Limit - Kill process attempting to flood the log with massive output (> 1MB).
 - [x] **TC-4.1.3**: CPU Limit - Kill infinite loops causing high CPU usage.
 - [x] **TC-4.1.4**: Stack Limit - Catch stack overflow errors from deep recursion.
+- [ ] **TC-4.1.5**: Queue TTL - Ensure jobs pending for too long in the queue are skipped/failed.
 
 ---
 

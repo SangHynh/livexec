@@ -7,6 +7,7 @@ import consumerManager from '../../src/queue/consumer.js';
 import executionService from '../../src/services/execution.service.js';
 import sessionService from '../../src/services/session.service.js';
 import sandboxRunner from '../../src/sandbox/runner.js';
+import config from '../../src/config/index.js';
 
 const POLL_INTERVAL_MS = 500;
 const POLL_TIMEOUT_MS = 30000;
@@ -35,6 +36,20 @@ describe('Resilience & Resource Limits Tests', () => {
 
     const processExecution = async (job) => {
       const { executionId, sessionId } = job.data;
+      const jobTimestamp = job.timestamp;
+      const ageMs = Date.now() - jobTimestamp;
+      const ttlMs = config.QUEUE?.JOB_TTL_MS || 60000;
+
+      // --- Security/Resilience Layer: Job Expiration Check ---
+      if (ageMs > ttlMs) {
+        await executionService.updateExecution(executionId, {
+          status: 'FAILED',
+          error_message: `Queue timeout: Execution skipped because it was pending for too long (${ageMs}ms).`,
+          completed_at: true,
+        });
+        return;
+      }
+
       try {
         await executionService.updateExecution(executionId, {
           status: 'RUNNING',
@@ -162,4 +177,32 @@ describe('Resilience & Resource Limits Tests', () => {
     expect(result.status).toBe('FAILED');
     expect(result.stderr.toLowerCase()).toContain('stack');
   }, 40000);
+
+  test('TC-4.1.5: Queue TTL — skip jobs older than limit', async () => {
+    // 1. Create a session
+    const sessionRes = await request(app)
+      .post('/code-sessions')
+      .send({
+        language: 'javascript',
+        source_code: 'console.log("wonky")',
+      });
+    const sessionId = sessionRes.body.data.id;
+
+    // 2. Create an execution record in DB first
+    const execution = await executionService.createExecution(sessionId);
+
+    // 3. Manually add to queue with an OLD timestamp (2 minutes ago)
+    const oldTimestamp = Date.now() - 120 * 1000;
+    await producer.executionQueue.add(
+      'run-code',
+      { executionId: execution.id, sessionId },
+      { jobId: execution.id, timestamp: oldTimestamp }
+    );
+
+    // 4. Poll and verify it was failed by the TTL logic
+    const result = await pollExecution(execution.id);
+    expect(result).not.toBeNull();
+    expect(result.status).toBe('FAILED');
+    expect(result.error_message).toContain('Queue timeout');
+  }, 20000);
 });
