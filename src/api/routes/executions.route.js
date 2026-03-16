@@ -13,4 +13,6 @@ router.get(
   executionsController.getExecution
 );
 
+router.post('/:id/run', executionRateLimit, executionsController.executeCode);
+
 export default router;
