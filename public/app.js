@@ -41,11 +41,16 @@ async function createSession() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ language: lang, source_code: '' }),
     });
+    
     const result = await response.json();
+    if (!response.ok) {
+        throw new Error(result.message || 'Failed to create session');
+    }
+    
     currentSessionId = result.data.id;
     console.log('Session Created:', currentSessionId);
   } catch (error) {
-    logSystem('Error creating session: ' + error.message, true);
+    logSystem(error.message, true);
   }
 }
 
@@ -63,11 +68,16 @@ document.getElementById('run-btn').addEventListener('click', async () => {
 
   try {
     // 1. Update session with latest code
-    await fetch(`${API_BASE}/code-sessions/${currentSessionId}`, {
+    const patchRes = await fetch(`${API_BASE}/code-sessions/${currentSessionId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ source_code: sourceCode, language: language }),
     });
+
+    if (!patchRes.ok) {
+      const errorData = await patchRes.json();
+      throw new Error(errorData.message || 'Validation failed');
+    }
 
     // 2. Trigger execution
     const execResponse = await fetch(
@@ -77,7 +87,13 @@ document.getElementById('run-btn').addEventListener('click', async () => {
         headers: { 'Content-Type': 'application/json' },
       }
     );
+
     const execResult = await execResponse.json();
+
+    if (!execResponse.ok) {
+      throw new Error(execResult.message || 'Execution failed to start');
+    }
+
     const executionId = execResult.data.id;
 
     logSystem('Execution queued. Waiting for worker...');
@@ -85,7 +101,7 @@ document.getElementById('run-btn').addEventListener('click', async () => {
     // 3. Start Polling
     pollExecutionResult(executionId);
   } catch (error) {
-    logSystem('Execution error: ' + error.message, true);
+    logSystem(error.message, true);
     setUIState('IDLE');
   }
 });
