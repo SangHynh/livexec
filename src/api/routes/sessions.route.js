@@ -16,7 +16,7 @@ const router = Router();
 router.post(
   '/',
   sessionRateLimit,
-  limitSourceCodeSize(50),
+  limitSourceCodeSize(),
   detectDangerousPatterns,
   sessionsController.createSession
 );
@@ -30,7 +30,7 @@ router.patch(
   '/:session_id',
   sessionRateLimit,
   validateUuid(['session_id']),
-  limitSourceCodeSize(50),
+  limitSourceCodeSize(),
   detectDangerousPatterns,
   sessionsController.updateSession
 );

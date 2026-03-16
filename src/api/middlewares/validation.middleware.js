@@ -1,5 +1,6 @@
 import { validate as uuidValidate } from 'uuid';
 import { BadRequestError } from '../../core/ApiError.js';
+import config from '../../config/index.js';
 
 export const validateUuid = (params = []) => {
   return (req, res, next) => {
@@ -28,7 +29,9 @@ export const validateUuid = (params = []) => {
   };
 };
 
-export const limitSourceCodeSize = (maxKb = 50) => {
+export const limitSourceCodeSize = (
+  maxKb = config.SANDBOX?.MAX_SOURCE_CODE_SIZE_KB || 50
+) => {
   return (req, res, next) => {
     const sourceCode = req.body.source_code;
     if (sourceCode && Buffer.byteLength(sourceCode, 'utf8') > maxKb * 1024) {
