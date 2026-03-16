@@ -4,15 +4,15 @@ import config from './src/config/index.js';
 const PORT = config.PORT;
 
 const server = app.listen(PORT, () => {
-  console.log(`[SERVER] Running on port ${PORT}`);
-  console.log(`[SERVER] Health check: http://localhost:${PORT}/health`);
+  console.log(`Running on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
 });
 
 // Graceful shutdown
 const shutdown = () => {
-  console.log('[SERVER] Shutting down...');
+  console.log('Shutting down...');
   server.close(() => {
-    console.log('[SERVER] Closed');
+    console.log('Closed');
     process.exit(0);
   });
 };

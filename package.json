@@ -8,7 +8,7 @@
   "scripts": {
     "server:dev": "npm run dev -w server",
     "server:start": "npm start -w server",
-    "dev": "concurrently \"npm run server:dev\"",
+    "dev": "concurrently --names \"server\" --prefix-colors \"blue\" \"npm run server:dev\"",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
