@@ -5,6 +5,10 @@ class ApiResponse {
     this.message = message;
     this.success = statusCode < 400;
   }
+
+  send(res) {
+    return res.status(this.statusCode).json(this);
+  }
 }
 
 class OkResponse extends ApiResponse {

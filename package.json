@@ -7,9 +7,10 @@
   ],
   "scripts": {
     "server:dev": "npm run dev -w server",
+    "verify-endpoints": "node scripts/verify_endpoints.js",
     "server:start": "npm start -w server",
     "dev": "concurrently --names \"server\" --prefix-colors \"blue\" \"npm run server:dev\"",
-    "lint": "eslint .",
+    "lint": "npm run lint -w server",
     "format": "prettier --write ."
   },
   "devDependencies": {
