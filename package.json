@@ -10,6 +10,7 @@
     "start": "node server.js",
     "worker:start": "node worker.js",
     "verify-endpoints": "node scripts/verify_endpoints.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -24,6 +25,7 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "concurrently": "^9.2.1",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.0.0",
