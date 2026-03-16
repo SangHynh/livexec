@@ -36,6 +36,7 @@ const config = {
     BACKOFF_DELAY: 1000,
     REMOVE_ON_COMPLETE: 100,
     REMOVE_ON_FAIL: 500,
+    JOB_TTL_MS: 60000, // 1 minute execution TTL in queue
   },
 };
 
