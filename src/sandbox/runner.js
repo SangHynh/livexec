@@ -36,8 +36,12 @@ class SandboxRunner {
     // 1. Setup file extensions and commands
     const isWindows = process.platform === 'win32';
     const fileConfigs = {
-      javascript: { ext: 'js', cmd: 'node' },
-      python: { ext: 'py', cmd: isWindows ? 'py' : 'python3' },
+      javascript: {
+        ext: 'js',
+        cmd: 'node',
+        args: [`--max-old-space-size=${config.SANDBOX_MEMORY_LIMIT_MB || 128}`],
+      },
+      python: { ext: 'py', cmd: isWindows ? 'py' : 'python3', args: [] },
     };
 
     const runConfig = fileConfigs[language];
@@ -63,7 +67,7 @@ class SandboxRunner {
       const result = await new Promise((resolve) => {
         const timeoutMs = config.SANDBOX_TIMEOUT_MS || 5000;
 
-        child = spawn(runConfig.cmd, [filePath], {
+        child = spawn(runConfig.cmd, [...runConfig.args, filePath], {
           cwd: workingDir,
           detached: !isWindows, // Detached mode is different on Windows
           env: {
