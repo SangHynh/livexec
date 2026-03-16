@@ -16,6 +16,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * Ensure the database exists by connecting to the default 'postgres' database
  */
 const ensureDatabaseExists = async () => {
+  if (!config.DATABASE_URL) {
+    throw new Error('DATABASE_URL is not defined in environment variables');
+  }
   const dbName = config.DATABASE_URL.split('/').pop().split('?')[0];
   const rootUrl = config.DATABASE_URL.replace(`/${dbName}`, '/postgres');
   
@@ -34,7 +37,7 @@ const ensureDatabaseExists = async () => {
       console.log(`Database "${dbName}" created successfully.`);
     }
   } catch (error) {
-    console.error('Error ensuring database exists:', error.message);
+    console.error('Error ensuring database exists:', error);
   } finally {
     await tempPool.end();
   }
@@ -59,7 +62,7 @@ const runMigrations = async () => {
       await pool.query(sql);
       console.log(`Migration ${file} executed successfully`);
     } catch (error) {
-      console.error(`Error executing migration ${file}:`, error.message);
+      console.error(`Error executing migration ${file}:`, error);
       throw error;
     }
   }

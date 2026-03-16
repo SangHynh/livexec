@@ -65,31 +65,41 @@ class SandboxRunner {
           timeout,
           maxBuffer: 1024 * 1024, // 1MB buffer limit
           cwd: workingDir,
+          env: {
+            ...process.env,
+            FORCE_COLOR: '0',
+            NODE_DISABLE_COLORS: '1',
+            PYTHONUNBUFFERED: '1'
+          }
         }, (error, stdout, stderr) => {
           const endTime = process.hrtime(startTime);
           const executionTimeMs = Math.round((endTime[0] * 1000) + (endTime[1] / 1000000));
+
+          // Clean up ANSI codes if any still leak through
+          const cleanStdout = this.stripAnsi(stdout);
+          const cleanStderr = this.stripAnsi(stderr);
 
           if (error) {
             if (error.killed) {
               resolve({
                 status: 'TIMEOUT',
-                stdout,
-                stderr: stderr + `\nExecution timed out after ${timeout}ms`,
+                stdout: cleanStdout,
+                stderr: cleanStderr + `\nExecution timed out after ${timeout}ms`,
                 execution_time_ms: executionTimeMs
               });
             } else {
               resolve({
                 status: 'FAILED',
-                stdout,
-                stderr: stderr || error.message,
+                stdout: cleanStdout,
+                stderr: cleanStderr || error.message,
                 execution_time_ms: executionTimeMs
               });
             }
           } else {
             resolve({
               status: 'COMPLETED',
-              stdout,
-              stderr,
+              stdout: cleanStdout,
+              stderr: cleanStderr,
               execution_time_ms: executionTimeMs
             });
           }
@@ -112,6 +122,15 @@ class SandboxRunner {
         console.error('Cleanup error:', rmError);
       }
     }
+  }
+
+  /**
+   * Remove ANSI escape codes (colors) from string
+   */
+  stripAnsi(str) {
+    if (typeof str !== 'string') return str;
+    // eslint-disable-next-line no-control-regex
+    return str.replace(/\u001b\[[0-9;]*[a-zA-Z]/g, '');
   }
 }
 
