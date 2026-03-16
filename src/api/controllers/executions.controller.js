@@ -9,11 +9,7 @@ import { BadRequestError } from '../../core/ApiError.js';
  * Trigger code execution for a session
  */
 export const executeCode = asyncHandler(async (req, res) => {
-  const { session_id } = req.body;
-
-  if (!session_id) {
-    throw new BadRequestError('Session ID is required');
-  }
+  const { session_id } = req.params;
 
   // 1. Verify session exists
   const session = await sessionService.getSession(session_id);
@@ -21,7 +17,8 @@ export const executeCode = asyncHandler(async (req, res) => {
   // 2. Idempotency Check: Check if there's already an active execution for this session
   const activeExecution = await executionService.getActiveExecutionBySession(session.id);
   if (activeExecution) {
-    return new OkResponse(activeExecution, 'Execution already in progress').send(res);
+    const data = { ...activeExecution, queued_at: activeExecution.created_at };
+    return new OkResponse(data, 'Execution already in progress').send(res);
   }
 
   // 2.5 Execution Limit Check: max 50 per session
@@ -36,7 +33,8 @@ export const executeCode = asyncHandler(async (req, res) => {
   // 4. Send task to BullMQ queue for processing
   await producer.enqueueExecution(execution.id, session.id);
 
-  return new CreatedResponse(execution, 'Execution queued').send(res);
+  const data = { ...execution, queued_at: execution.created_at };
+  return new CreatedResponse(data, 'Execution queued').send(res);
 });
 
 /**

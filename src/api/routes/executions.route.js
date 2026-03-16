@@ -7,7 +7,6 @@ const router = Router();
 
 router.use(executionRateLimit);
 
-router.post('/', validateUuid(['session_id']), executionsController.executeCode);
 router.get('/:execution_id', validateUuid(['execution_id']), executionsController.getExecution);
 
 export default router;

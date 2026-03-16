@@ -66,10 +66,9 @@ document.getElementById('run-btn').addEventListener('click', async () => {
         });
 
         // 2. Trigger execution
-        const execResponse = await fetch(`${API_BASE}/executions`, {
+        const execResponse = await fetch(`${API_BASE}/code-sessions/${currentSessionId}/run`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ session_id: currentSessionId })
+            headers: { 'Content-Type': 'application/json' }
         });
         const execResult = await execResponse.json();
         const executionId = execResult.data.id;
