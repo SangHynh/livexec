@@ -1,0 +1,16 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config({ path: path.join(process.cwd(), '.env') });
+
+const config = {
+  PORT: process.env.PORT || 3000,
+  DATABASE_URL: process.env.DATABASE_URL,
+  REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
+  SANDBOX_TIMEOUT_MS: parseInt(process.env.SANDBOX_TIMEOUT_MS || '5000', 10),
+  SANDBOX_MEMORY_LIMIT_MB: parseInt(process.env.SANDBOX_MEMORY_LIMIT_MB || '128', 10),
+  MAX_EXECUTIONS_PER_MINUTE: parseInt(process.env.MAX_EXECUTIONS_PER_MINUTE || '10', 10),
+  ALLOWED_LANGUAGES: (process.env.ALLOWED_LANGUAGES || 'javascript,python').split(','),
+};
+
+export default config;

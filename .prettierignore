@@ -1,0 +1,7 @@
+node_modules
+dist
+.next
+.vscode
+.agents
+*.md
+package-lock.json
