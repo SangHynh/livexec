@@ -3,18 +3,27 @@ import dotenv from 'dotenv';
 dotenv.config({ override: true });
 
 const config = {
-  PORT: process.env.PORT || 3000,
-  DATABASE_URL: process.env.DATABASE_URL,
+  PORT: parseInt(process.env.PORT || '3000', 10),
+  DATABASE_URL:
+    process.env.DATABASE_URL ||
+    'postgresql://postgres:postgres@localhost:5432/livexec',
   REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379',
-  SANDBOX_TIMEOUT_MS: parseInt(process.env.SANDBOX_TIMEOUT_MS || '5000', 10),
-  SANDBOX_MEMORY_LIMIT_MB: parseInt(
-    process.env.SANDBOX_MEMORY_LIMIT_MB || '128',
-    10
-  ),
-  MAX_EXECUTIONS_PER_MINUTE: parseInt(
-    process.env.MAX_EXECUTIONS_PER_MINUTE || '10',
-    10
-  ),
+
+  // Sandbox constraints (Hardcoded as not in .env.example)
+  SANDBOX: {
+    TIMEOUT_MS: 5000,
+    MEMORY_LIMIT_MB: 128,
+    MAX_OUTPUT_SIZE: 1024 * 1024, // 1MB
+  },
+
+  // Rate limiting (Hardcoded as not in .env.example)
+  RATE_LIMIT: {
+    EXECUTIONS_PER_MINUTE: 10,
+    SESSIONS_PER_MINUTE: 60,
+    GLOBAL_PER_MINUTE: 100,
+    MAX_EXECUTIONS_PER_SESSION: 50,
+  },
+
   ALLOWED_LANGUAGES: (
     process.env.ALLOWED_LANGUAGES || 'javascript,python'
   ).split(','),
