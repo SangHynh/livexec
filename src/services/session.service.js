@@ -22,11 +22,11 @@ const createSession = async (language, sourceCode = '') => {
  */
 const getSession = async (id) => {
   const result = await query('SELECT * FROM code_sessions WHERE id = $1', [id]);
-  
+
   if (result.rowCount === 0) {
     throw new NotFoundError('Code session not found');
   }
-  
+
   return result.rows[0];
 };
 

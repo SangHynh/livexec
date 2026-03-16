@@ -21,11 +21,11 @@ const createExecution = async (sessionId) => {
  */
 const getExecution = async (id) => {
   const result = await query('SELECT * FROM executions WHERE id = $1', [id]);
-  
+
   if (result.rowCount === 0) {
     throw new NotFoundError('Execution not found');
   }
-  
+
   return result.rows[0];
 };
 
@@ -35,20 +35,31 @@ const getExecution = async (id) => {
  * @param {Object} updates - { status, stdout, stderr, execution_time_ms, error_message, started_at, completed_at }
  * @returns {Promise<Object>} Updated execution
  */
-const updateExecution = async (id, { 
-  status, 
-  stdout, 
-  stderr, 
-  execution_time_ms, 
-  error_message,
-  started_at,
-  completed_at
-}) => {
+const updateExecution = async (
+  id,
+  {
+    status,
+    stdout,
+    stderr,
+    execution_time_ms,
+    error_message,
+    started_at,
+    completed_at,
+  }
+) => {
   const fields = [];
   const values = [];
   let index = 1;
 
-  const params = { status, stdout, stderr, execution_time_ms, error_message, started_at, completed_at };
+  const params = {
+    status,
+    stdout,
+    stderr,
+    execution_time_ms,
+    error_message,
+    started_at,
+    completed_at,
+  };
 
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined) {
@@ -76,7 +87,7 @@ const updateExecution = async (id, {
 
 /**
  * Find any active execution (QUEUED or RUNNING) for a session
- * @param {string} sessionId 
+ * @param {string} sessionId
  * @returns {Promise<Object|null>}
  */
 const getActiveExecutionBySession = async (sessionId) => {
@@ -89,7 +100,7 @@ const getActiveExecutionBySession = async (sessionId) => {
 
 /**
  * Count total executions for a session
- * @param {string} sessionId 
+ * @param {string} sessionId
  * @returns {Promise<number>}
  */
 const getExecutionCountBySession = async (sessionId) => {

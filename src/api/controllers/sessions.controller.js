@@ -15,11 +15,13 @@ export const createSession = asyncHandler(async (req, res) => {
   }
 
   if (!config.ALLOWED_LANGUAGES.includes(language)) {
-    throw new BadRequestError(`Language "${language}" is not supported. Supported: ${config.ALLOWED_LANGUAGES.join(', ')}`);
+    throw new BadRequestError(
+      `Language "${language}" is not supported. Supported: ${config.ALLOWED_LANGUAGES.join(', ')}`
+    );
   }
 
   const session = await sessionService.createSession(language, source_code);
-  
+
   return new CreatedResponse(session, 'Session created successfully').send(res);
 });
 
@@ -29,7 +31,7 @@ export const createSession = asyncHandler(async (req, res) => {
 export const getSession = asyncHandler(async (req, res) => {
   const { session_id } = req.params;
   const session = await sessionService.getSession(session_id);
-  
+
   return new OkResponse(session).send(res);
 });
 
