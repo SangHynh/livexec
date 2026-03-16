@@ -6,11 +6,14 @@ import cors from 'cors';
 import router from './api/routes/index.js';
 import errorMiddleware from './api/middlewares/error.middleware.js';
 
+import { globalRateLimit } from './api/middlewares/rate-limit.middleware.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 
+app.use(globalRateLimit);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

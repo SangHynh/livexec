@@ -24,6 +24,12 @@ export const executeCode = asyncHandler(async (req, res) => {
     return new OkResponse(activeExecution, 'Execution already in progress').send(res);
   }
 
+  // 2.5 Execution Limit Check: max 50 per session
+  const totalExecutions = await executionService.getExecutionCountBySession(session.id);
+  if (totalExecutions >= 50) {
+    throw new BadRequestError('Maximum execution limit (50) reached for this session');
+  }
+
   // 3. Create execution record in DB (status: QUEUED)
   const execution = await executionService.createExecution(session.id);
 

@@ -87,9 +87,23 @@ const getActiveExecutionBySession = async (sessionId) => {
   return result.rows.length > 0 ? result.rows[0] : null;
 };
 
+/**
+ * Count total executions for a session
+ * @param {string} sessionId 
+ * @returns {Promise<number>}
+ */
+const getExecutionCountBySession = async (sessionId) => {
+  const result = await query(
+    'SELECT COUNT(*) FROM executions WHERE session_id = $1',
+    [sessionId]
+  );
+  return parseInt(result.rows[0].count, 10);
+};
+
 export default {
   createExecution,
   getActiveExecutionBySession,
   getExecution,
+  getExecutionCountBySession,
   updateExecution,
 };
