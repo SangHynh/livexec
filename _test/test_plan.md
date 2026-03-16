@@ -34,15 +34,32 @@
 
 ---
 
-## 3. Tooling & Environment
-- **Framework**: Jest (`npm install --save-dev jest`)
-- **API Testing**: Supertest (`npm install --save-dev supertest`)
-- **Database**: Mock PostgreSQL using `jest.mock` or a dedicated test database container.
-- **Queue**: Mock BullMQ for isolated unit tests.
+## 3. Hardening & Security
+
+### 3.1 Validation & Filtering
+- [ ] **TC-3.1.1**: Source Code Size Limit - Send code > 50KB, verify 400 error.
+- [ ] **TC-3.1.2**: Dangerous Patterns - Block `require('fs')`, `process.exit`, etc.
+- [ ] **TC-3.1.3 (Edge Case)**: Case Sensitivity - Verify `rEquire('fS')` is also blocked.
+- [ ] **TC-3.1.4 (Edge Case)**: Commented-out patterns - Verify patterns inside comments are still blocked (safer default).
+
+### 3.2 Rate Limiting & Abuse Prevention
+- [ ] **TC-3.2.1**: Execution Frequency - Send > 10 req/min, verify 429 error.
+- [ ] **TC-3.2.2**: Max Executions per Session - Send 51st request for one session, verify 400 error.
+- [ ] **TC-3.2.3**: Active Execution Lock - Try to run code while one is already `QUEUED`, verify it returns the active one (Idempotency focus).
+
+### 3.3 Sandbox Integrity
+- [ ] **TC-3.3.1**: Process Group Kill - Code that spawns a sub-process; verify both are killed on timeout (Spawn + Detached mode).
 
 ---
 
-## 4. How to Run
+## 4. Tooling & Environment
+- **Framework**: Jest (`npm install --save-dev jest`)
+- **API Testing**: Supertest (`npm install --save-dev supertest`)
+- **Rate Limit Testing**: Requires multiple rapid requests using `Promise.all`.
+
+---
+
+## 5. How to Run
 ```bash
 npm test
 ```
