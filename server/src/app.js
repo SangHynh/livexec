@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 
+import errorMiddleware from './api/middlewares/error.middleware.js';
+
 const app = express();
 
 app.use(cors());
@@ -21,15 +23,7 @@ app.use('/executions', (req, res, next) => {
   res.status(501).json({ message: 'Not Implemented' });
 });
 
-// Error handling middleware (PHASE 2.5)
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: {
-      code: 'INTERNAL_ERROR',
-      message: err.message || 'Something went wrong',
-    },
-  });
-});
+// Error handling middleware
+app.use(errorMiddleware);
 
 export default app;
