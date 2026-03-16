@@ -10,7 +10,10 @@
     "start": "node server.js",
     "worker:start": "node worker.js",
     "verify-endpoints": "node scripts/verify_endpoints.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js _test/unit",
+    "test:api": "node --experimental-vm-modules node_modules/jest/bin/jest.js _test/integration/api.test.js",
+    "test:security": "node --experimental-vm-modules node_modules/jest/bin/jest.js _test/integration/security.test.js",
+    "test:resilience": "node --experimental-vm-modules node_modules/jest/bin/jest.js _test/integration/resilience.test.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
