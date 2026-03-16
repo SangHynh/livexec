@@ -1,20 +1,20 @@
 export default [
   {
-    ignores: ["node_modules/**", "dist/**", "client/**", "server/dist/**"]
+    ignores: ['node_modules/**', 'dist/**', 'client/**', 'server/dist/**'],
   },
   {
-    files: ["**/*.js"],
+    files: ['**/*.js'],
     languageOptions: {
-      ecmaVersion: "latest",
-      sourceType: "module",
+      ecmaVersion: 'latest',
+      sourceType: 'module',
       globals: {
         node: true,
-        jest: true
-      }
+        jest: true,
+      },
     },
     rules: {
-      "no-unused-vars": "warn",
-      "no-console": "off"
-    }
-  }
+      'no-unused-vars': 'warn',
+      'no-console': 'off',
+    },
+  },
 ];
