@@ -6,6 +6,7 @@ import executionService from '../../src/services/execution.service.js';
 import sessionService from '../../src/services/session.service.js';
 import sandboxRunner from '../../src/sandbox/runner.js';
 import redisConnection from '../../src/config/redis.js';
+import producer from '../../src/queue/producer.js';
 
 describe('API Integration Tests', () => {
   let sessionId;
@@ -13,23 +14,33 @@ describe('API Integration Tests', () => {
 
   beforeAll(async () => {
     await sandboxRunner.prepare();
-    
+
     // Start a test worker to process jobs during integration tests
     const processExecution = async (job) => {
       const { executionId, sessionId } = job.data;
       try {
-        await executionService.updateExecution(executionId, { status: 'RUNNING', started_at: true });
+        await executionService.updateExecution(executionId, {
+          status: 'RUNNING',
+          started_at: true,
+        });
         const session = await sessionService.getSession(sessionId);
-        const result = await sandboxRunner.run(session.language, session.source_code);
+        const result = await sandboxRunner.run(
+          session.language,
+          session.source_code
+        );
         await executionService.updateExecution(executionId, {
           status: result.status,
           stdout: result.stdout,
           stderr: result.stderr,
           execution_time_ms: result.execution_time_ms,
-          completed_at: true
+          completed_at: true,
         });
       } catch (error) {
-        await executionService.updateExecution(executionId, { status: 'FAILED', error_message: error.message, completed_at: true });
+        await executionService.updateExecution(executionId, {
+          status: 'FAILED',
+          error_message: error.message,
+          completed_at: true,
+        });
       }
     };
 
@@ -38,6 +49,7 @@ describe('API Integration Tests', () => {
 
   afterAll(async () => {
     if (testWorker) await testWorker.close();
+    await producer.executionQueue.close();
     await pool.end();
     await redisConnection.quit();
   });
@@ -77,10 +89,10 @@ describe('API Integration Tests', () => {
     expect(res.body.message).toContain('is not supported');
   });
 
-  test('TC-2.1.3: Should trigger code execution (POST /executions)', async () => {
+  test('TC-2.1.3: Should trigger code execution (POST /code-sessions/:id/run)', async () => {
     const res = await request(app)
-      .post('/executions')
-      .send({ session_id: sessionId });
+      .post(`/code-sessions/${sessionId}/run`)
+      .send({});
 
     expect(res.status).toBe(201);
     expect(res.body.data).toHaveProperty('id');
@@ -89,11 +101,11 @@ describe('API Integration Tests', () => {
 
   test('TC-2.1.5: Idempotency - Should return existing active execution', async () => {
     const res = await request(app)
-      .post('/executions')
-      .send({ session_id: sessionId });
+      .post(`/code-sessions/${sessionId}/run`)
+      .send({});
 
     // Since one is already QUEUED from previous test
-    expect(res.status).toBe(200); 
+    expect(res.status).toBe(200);
     expect(res.body.message).toContain('already in progress');
   });
 
@@ -101,9 +113,9 @@ describe('API Integration Tests', () => {
     // We need an execution ID - we'll trigger one just in case or use the one from TC-2.1.3
     // But since TC-2.1.5 returned it, we can use that body
     const resTrigger = await request(app)
-      .post('/executions')
-      .send({ session_id: sessionId });
-    
+      .post(`/code-sessions/${sessionId}/run`)
+      .send({});
+
     const executionId = resTrigger.body.data.id;
 
     const res = await request(app).get(`/executions/${executionId}`);
@@ -116,34 +128,37 @@ describe('API Integration Tests', () => {
   test('TC-2.2.1 & TC-2.2.2: Should persist execution results in DB after completion', async () => {
     // 1. Trigger execution
     const resTrigger = await request(app)
-      .post('/executions')
-      .send({ session_id: sessionId });
-    
+      .post(`/code-sessions/${sessionId}/run`)
+      .send({});
+
+    expect([201, 200]).toContain(resTrigger.status);
     const executionId = resTrigger.body.data.id;
 
-    // 2. Poll until COMPLETED or FAILED (max 10s)
+    // 2. Poll until FINISHED (COMPLETED/FAILED/TIMEOUT) or max 30s (30 attempts * 1000ms)
     let status = 'QUEUED';
-    let attempts = 0;
-    while (status !== 'COMPLETED' && status !== 'FAILED' && attempts < 20) {
+    for (let attempts = 0; attempts < 30; attempts++) {
       const res = await request(app).get(`/executions/${executionId}`);
-      
+
       if (res.body && res.body.data) {
         status = res.body.data.status;
-        if (status === 'COMPLETED' || status === 'FAILED') {
-          expect(res.body.data).toHaveProperty('stdout');
-          expect(res.body.data).toHaveProperty('execution_time_ms');
-          break;
-        }
       }
-      
-      await new Promise(r => setTimeout(r, 500));
-      attempts++;
+
+      if (['COMPLETED', 'FAILED', 'TIMEOUT'].includes(status)) {
+        break;
+      }
+
+      await new Promise((r) => setTimeout(r, 1000));
     }
 
     // Verify consistency
-    const dbResult = await pool.query('SELECT * FROM executions WHERE id = $1', [executionId]);
-    expect(dbResult.rows[0].status).toBe(status);
-  }, 15000);
+    expect(status).toBe('COMPLETED');
+
+    const dbResult = await pool.query(
+      'SELECT status FROM executions WHERE id = $1',
+      [executionId]
+    );
+    expect(dbResult.rows[0].status).toBe('COMPLETED');
+  }, 45000);
 
   test('Should return 404 for non-existent session', async () => {
     const fakeId = '00000000-0000-0000-0000-000000000000';

@@ -2,6 +2,8 @@ import request from 'supertest';
 import app from '../../src/app.js';
 import { pool } from '../../src/db/index.js';
 import { v4 as uuidv4 } from 'uuid';
+import redisConnection from '../../src/config/redis.js';
+import producer from '../../src/queue/producer.js';
 
 describe('Security and Hardening Integration Tests', () => {
   let sessionId;
@@ -9,12 +11,17 @@ describe('Security and Hardening Integration Tests', () => {
   beforeAll(async () => {
     const res = await request(app)
       .post('/code-sessions')
-      .send({ language: 'javascript', source_code: '// security test session' });
+      .send({
+        language: 'javascript',
+        source_code: '// security test session',
+      });
     sessionId = res.body.data.id;
   });
 
   afterAll(async () => {
+    await producer.executionQueue.close();
     await pool.end();
+    await redisConnection.quit();
   });
 
   describe('3.1 Validation & Filtering', () => {
@@ -31,7 +38,10 @@ describe('Security and Hardening Integration Tests', () => {
     test('TC-3.1.2: Should block dangerous patterns (fs)', async () => {
       const res = await request(app)
         .post('/code-sessions')
-        .send({ language: 'javascript', source_code: "const fs = require('fs');" });
+        .send({
+          language: 'javascript',
+          source_code: "const fs = require('fs');",
+        });
 
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('dangerous code detected');
@@ -50,7 +60,10 @@ describe('Security and Hardening Integration Tests', () => {
     test('TC-3.1.4: Should block dangerous patterns inside comments', async () => {
       const res = await request(app)
         .post('/code-sessions')
-        .send({ language: 'javascript', source_code: "// I am not dangerous: require('fs')" });
+        .send({
+          language: 'javascript',
+          source_code: "// I am not dangerous: require('fs')",
+        });
 
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('dangerous code detected');
@@ -60,7 +73,10 @@ describe('Security and Hardening Integration Tests', () => {
       // Now should be BLOCKED by normalization logic
       const res = await request(app)
         .post('/code-sessions')
-        .send({ language: 'javascript', source_code: "const r = 're' + 'quire'; const fs = r('fs');" });
+        .send({
+          language: 'javascript',
+          source_code: "const r = 're' + 'quire'; const fs = r('fs');",
+        });
 
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('dangerous code detected');
@@ -83,7 +99,10 @@ describe('Security and Hardening Integration Tests', () => {
       // 1. Create a fresh session to avoid pollution
       const freshSessionRes = await request(app)
         .post('/code-sessions')
-        .send({ language: 'javascript', source_code: 'console.log("limit test")' });
+        .send({
+          language: 'javascript',
+          source_code: 'console.log("limit test")',
+        });
       const freshId = freshSessionRes.body.data.id;
 
       // 2. Manually insert 50 completed executions into DB for this session
@@ -97,11 +116,13 @@ describe('Security and Hardening Integration Tests', () => {
 
       // 3. Try to trigger the 51st execution via API
       const res = await request(app)
-        .post('/executions')
-        .send({ session_id: freshId });
+        .post(`/code-sessions/${freshId}/run`)
+        .send({});
 
       expect(res.status).toBe(400);
-      expect(res.body.message).toContain('Maximum execution limit (50) reached');
+      expect(res.body.message).toContain(
+        'Maximum execution limit (50) reached'
+      );
     });
 
     test('TC-3.2.1: Should trigger rate limiting after multiple requests', async () => {
@@ -109,16 +130,18 @@ describe('Security and Hardening Integration Tests', () => {
       // We'll try hitting the health check or a simple endpoint multiple times
       // Since our limit is 100/min global, we need 101 requests.
       // For/executions it's 10/min. Let's try /executions
-      
+
       const promises = [];
       for (let i = 0; i < 12; i++) {
-        promises.push(request(app).post('/executions').send({ session_id: sessionId }));
+        promises.push(
+          request(app).post(`/code-sessions/${sessionId}/run`).send({})
+        );
       }
 
       const results = await Promise.all(promises);
-      const rateLimited = results.some(r => r.status === 429);
-      
-      // We skip strict assertion here because in some environments (Docker/Local) 
+      const rateLimited = results.some((r) => r.status === 429);
+
+      // We skip strict assertion here because in some environments (Docker/Local)
       // the IP might be detected differently or middleware might not be active in test agent
       // But we check if at least one returned 429
       expect(rateLimited).toBe(true);
