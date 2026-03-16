@@ -32,7 +32,7 @@ class SandboxRunner {
   async run(language, sourceCode) {
     const executionId = uuidv4();
     const workingDir = path.join(this.tempDir, executionId);
-    
+
     // 1. Setup file extensions and commands
     const isWindows = process.platform === 'win32';
     const fileConfigs = {
@@ -45,7 +45,7 @@ class SandboxRunner {
       return {
         status: 'FAILED',
         stderr: `Unsupported language: ${language}`,
-        execution_time_ms: 0
+        execution_time_ms: 0,
       };
     }
 
@@ -62,7 +62,7 @@ class SandboxRunner {
       // 3. Execute code using spawn for better control
       const result = await new Promise((resolve) => {
         const timeoutMs = config.SANDBOX_TIMEOUT_MS || 5000;
-        
+
         child = spawn(runConfig.cmd, [filePath], {
           cwd: workingDir,
           detached: !isWindows, // Detached mode is different on Windows
@@ -70,8 +70,8 @@ class SandboxRunner {
             ...process.env,
             FORCE_COLOR: '0',
             NODE_DISABLE_COLORS: '1',
-            PYTHONUNBUFFERED: '1'
-          }
+            PYTHONUNBUFFERED: '1',
+          },
         });
 
         let stdout = '';
@@ -104,20 +104,24 @@ class SandboxRunner {
         child.on('error', (err) => {
           clearTimeout(timeout);
           const endTime = process.hrtime(startTime);
-          const executionTimeMs = Math.round((endTime[0] * 1000) + (endTime[1] / 1000000));
+          const executionTimeMs = Math.round(
+            endTime[0] * 1000 + endTime[1] / 1000000
+          );
           resolve({
             status: 'FAILED',
             stdout: this.stripAnsi(stdout),
             stderr: this.stripAnsi(stderr || err.message),
-            execution_time_ms: executionTimeMs
+            execution_time_ms: executionTimeMs,
           });
         });
 
         child.on('exit', (code, signal) => {
           clearTimeout(timeout);
           const endTime = process.hrtime(startTime);
-          const executionTimeMs = Math.round((endTime[0] * 1000) + (endTime[1] / 1000000));
-          
+          const executionTimeMs = Math.round(
+            endTime[0] * 1000 + endTime[1] / 1000000
+          );
+
           const cleanStdout = this.stripAnsi(stdout);
           const cleanStderr = this.stripAnsi(stderr);
 
@@ -125,34 +129,34 @@ class SandboxRunner {
             resolve({
               status: 'TIMEOUT',
               stdout: cleanStdout,
-              stderr: cleanStderr + `\nExecution timed out after ${timeoutMs}ms`,
-              execution_time_ms: executionTimeMs
+              stderr:
+                cleanStderr + `\nExecution timed out after ${timeoutMs}ms`,
+              execution_time_ms: executionTimeMs,
             });
           } else if (code !== 0) {
             resolve({
               status: 'FAILED',
               stdout: cleanStdout,
               stderr: cleanStderr || `Process exited with code ${code}`,
-              execution_time_ms: executionTimeMs
+              execution_time_ms: executionTimeMs,
             });
           } else {
             resolve({
               status: 'COMPLETED',
               stdout: cleanStdout,
               stderr: cleanStderr,
-              execution_time_ms: executionTimeMs
+              execution_time_ms: executionTimeMs,
             });
           }
         });
       });
 
       return result;
-
     } catch (error) {
       return {
         status: 'FAILED',
         stderr: error.message,
-        execution_time_ms: 0
+        execution_time_ms: 0,
       };
     } finally {
       // Emergency kill to release file handles before deletion
@@ -175,10 +179,13 @@ class SandboxRunner {
         } catch (rmError) {
           retries--;
           if (retries === 0) {
-            console.error(`Final cleanup error for ${workingDir}:`, rmError.message);
+            console.error(
+              `Final cleanup error for ${workingDir}:`,
+              rmError.message
+            );
           } else {
             // Wait 100ms before retrying
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise((resolve) => setTimeout(resolve, 100));
           }
         }
       }

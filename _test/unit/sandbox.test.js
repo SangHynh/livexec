@@ -18,17 +18,17 @@ describe('SandboxRunner Unit Tests', () => {
 
   test('TC-1.1.5: Should cleanup temporary directory after execution', async () => {
     // We need to peek into the runner to see where it stores files
-    // Since runner.js uses uuidv4(), we can't easily predict the path 
+    // Since runner.js uses uuidv4(), we can't easily predict the path
     // BUT we can check if the temp/executions dir contains fewer items than before
-    
+
     const code = 'console.log("cleanup test")';
-    
+
     // We'll manually check the temp directory
     const tempRoot = path.join(process.cwd(), 'temp', 'executions');
     const beforeDirs = await fs.readdir(tempRoot);
-    
+
     await sandboxRunner.run('javascript', code);
-    
+
     const afterDirs = await fs.readdir(tempRoot);
     expect(afterDirs.length).toBe(beforeDirs.length);
   });
@@ -51,7 +51,7 @@ describe('SandboxRunner Unit Tests', () => {
 
   test('TC-1.1.4: Should handle timeout for infinite loops', async () => {
     const code = 'while(true) {}';
-    // Using a shorter timeout for testing if possible, 
+    // Using a shorter timeout for testing if possible,
     // but the runner uses config.SANDBOX_TIMEOUT_MS which is 5s by default
     const result = await sandboxRunner.run('javascript', code);
 
