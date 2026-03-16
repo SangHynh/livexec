@@ -56,6 +56,12 @@ class ValidationError extends ApiError {
   }
 }
 
+class TooManyRequestsError extends ApiError {
+  constructor(message = 'Too Many Requests') {
+    super(429, message);
+  }
+}
+
 export {
   ApiError,
   BadRequestError,
@@ -64,4 +70,5 @@ export {
   NotFoundError,
   ConflictError,
   ValidationError,
+  TooManyRequestsError,
 };
