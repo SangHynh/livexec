@@ -39,7 +39,9 @@ class SandboxRunner {
       javascript: {
         ext: 'js',
         cmd: 'node',
-        args: [`--max-old-space-size=${config.SANDBOX_MEMORY_LIMIT_MB || 128}`],
+        args: [
+          `--max-old-space-size=${config.SANDBOX.MEMORY_LIMIT_MB || 128}`,
+        ],
       },
       python: { ext: 'py', cmd: isWindows ? 'py' : 'python3', args: [] },
     };
@@ -65,7 +67,7 @@ class SandboxRunner {
 
       // 3. Execute code using spawn for better control
       const result = await new Promise((resolve) => {
-        const timeoutMs = config.SANDBOX_TIMEOUT_MS || 5000;
+        const timeoutMs = config.SANDBOX.TIMEOUT_MS || 5000;
 
         child = spawn(runConfig.cmd, [...runConfig.args, filePath], {
           cwd: workingDir,
@@ -97,12 +99,28 @@ class SandboxRunner {
           }
         }, timeoutMs);
 
+        const MAX_OUTPUT_SIZE = config.SANDBOX.MAX_OUTPUT_SIZE || 1024 * 1024;
+
         child.stdout.on('data', (data) => {
-          stdout += data.toString();
+          if (stdout.length < MAX_OUTPUT_SIZE) {
+            stdout += data.toString();
+            if (stdout.length >= MAX_OUTPUT_SIZE) {
+              stdout =
+                stdout.slice(0, MAX_OUTPUT_SIZE) +
+                '\n[Output truncated due to size limit]';
+            }
+          }
         });
 
         child.stderr.on('data', (data) => {
-          stderr += data.toString();
+          if (stderr.length < MAX_OUTPUT_SIZE) {
+            stderr += data.toString();
+            if (stderr.length >= MAX_OUTPUT_SIZE) {
+              stderr =
+                stderr.slice(0, MAX_OUTPUT_SIZE) +
+                '\n[Output truncated due to size limit]';
+            }
+          }
         });
 
         child.on('error', (err) => {
