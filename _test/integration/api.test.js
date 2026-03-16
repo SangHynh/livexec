@@ -57,7 +57,7 @@ describe('API Integration Tests', () => {
   test('TC-2.1.1: Should create a new code session', async () => {
     const res = await request(app)
       .post('/code-sessions')
-      .send({ language: 'javascript', source_code: 'console.log("init")' });
+      .send({ language: 'javascript', source_code: 'setTimeout(() => console.log("init"), 500)' });
 
     expect(res.status).toBe(201);
     expect(res.body.data).toHaveProperty('id');
