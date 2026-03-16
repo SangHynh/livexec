@@ -20,20 +20,25 @@ const startWorker = async () => {
     // 3. Job processor logic
     const processExecution = async (job) => {
       const { executionId, sessionId } = job.data;
-      console.log(`Processing execution ${executionId} (Session: ${sessionId})`);
+      console.log(
+        `Processing execution ${executionId} (Session: ${sessionId})`
+      );
 
       try {
         // Step A: Update status to RUNNING
         await executionService.updateExecution(executionId, {
           status: 'RUNNING',
-          started_at: true
+          started_at: true,
         });
 
         const session = await sessionService.getSession(sessionId);
 
         // Step B: REAL Sandbox Execution
         console.log(`[SANDBOX] Running ${session.language} code...`);
-        const result = await sandboxRunner.run(session.language, session.source_code);
+        const result = await sandboxRunner.run(
+          session.language,
+          session.source_code
+        );
 
         // Step C: Update status and results
         await executionService.updateExecution(executionId, {
@@ -41,17 +46,18 @@ const startWorker = async () => {
           stdout: result.stdout,
           stderr: result.stderr,
           execution_time_ms: result.execution_time_ms,
-          completed_at: true
+          completed_at: true,
         });
 
-        console.log(`Execution ${executionId} finished with status: ${result.status}`);
-
+        console.log(
+          `Execution ${executionId} finished with status: ${result.status}`
+        );
       } catch (error) {
         console.error(`Execution processing error:`, error.message);
         await executionService.updateExecution(executionId, {
           status: 'FAILED',
           error_message: error.message,
-          completed_at: true
+          completed_at: true,
         });
         throw error; // Re-throw to allow BullMQ to handle retries
       }
@@ -61,7 +67,6 @@ const startWorker = async () => {
     consumerManager.initConsumer(processExecution);
 
     console.log('Worker is now live and waiting for tasks!');
-
   } catch (error) {
     console.error('Failed to start worker:', error.message);
     process.exit(1);

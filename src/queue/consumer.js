@@ -21,14 +21,14 @@ const initConsumer = (processor) => {
 
   worker.on('failed', async (job, error) => {
     console.error(`Job ${job.id} failed with error: ${error.message}`);
-    
+
     // If all attempts failed, update status in DB
     if (job.attemptsMade >= job.opts.attempts) {
       console.log(`Job ${job.id} reached max retries. Marking as FAILED.`);
       await executionService.updateExecution(job.data.executionId, {
         status: 'FAILED',
         error_message: `Fatal error after ${job.opts.attempts} retries: ${error.message}`,
-        completed_at: true
+        completed_at: true,
       });
     }
   });
