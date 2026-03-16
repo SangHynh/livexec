@@ -13,9 +13,39 @@ const pool = new Pool({
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
+ * Ensure the database exists by connecting to the default 'postgres' database
+ */
+const ensureDatabaseExists = async () => {
+  const dbName = config.DATABASE_URL.split('/').pop().split('?')[0];
+  const rootUrl = config.DATABASE_URL.replace(`/${dbName}`, '/postgres');
+  
+  const tempPool = new Pool({ connectionString: rootUrl });
+  
+  try {
+    const result = await tempPool.query(
+      `SELECT 1 FROM pg_database WHERE datname = $1`,
+      [dbName]
+    );
+
+    if (result.rowCount === 0) {
+      console.log(`Database "${dbName}" not found. Creating...`);
+      // CREATE DATABASE cannot be run in a transaction, so we use the root connection
+      await tempPool.query(`CREATE DATABASE ${dbName}`);
+      console.log(`Database "${dbName}" created successfully.`);
+    }
+  } catch (error) {
+    console.error('Error ensuring database exists:', error.message);
+  } finally {
+    await tempPool.end();
+  }
+};
+
+/**
  * Execute all SQL migrations in the migrations directory
  */
 const runMigrations = async () => {
+  await ensureDatabaseExists();
+  
   const migrationsDir = path.join(__dirname, 'migrations');
   const files = fs.readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort();
 

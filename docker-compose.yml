@@ -29,6 +29,9 @@ services:
       - "3000:3000"
     env_file:
       - server/.env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-livexec}
+      - REDIS_URL=redis://redis:6379
     volumes:
       - ./server:/app
       - /app/node_modules
@@ -43,6 +46,9 @@ services:
       - redis
     env_file:
       - server/.env
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-livexec}
+      - REDIS_URL=redis://redis:6379
     volumes:
       - ./server:/app
       - /app/node_modules
