@@ -4,6 +4,7 @@ import producer from '../../queue/producer.js';
 import asyncHandler from '../../core/asyncHandler.js';
 import { CreatedResponse, OkResponse } from '../../core/ApiResponse.js';
 import { BadRequestError } from '../../core/ApiError.js';
+import config from '../../config/index.js';
 
 /**
  * Trigger code execution for a session
@@ -23,13 +24,14 @@ export const executeCode = asyncHandler(async (req, res) => {
     return new OkResponse(data, 'Execution already in progress').send(res);
   }
 
-  // 2.5 Execution Limit Check: max 50 per session
+  // 2.5 Execution Limit Check: max per session
   const totalExecutions = await executionService.getExecutionCountBySession(
     session.id
   );
-  if (totalExecutions >= 50) {
+  const maxLimit = config.RATE_LIMIT?.MAX_EXECUTIONS_PER_SESSION || 50;
+  if (totalExecutions >= maxLimit) {
     throw new BadRequestError(
-      'Maximum execution limit (50) reached for this session'
+      `Maximum execution limit (${maxLimit}) reached for this session`
     );
   }
 

@@ -1,12 +1,12 @@
 import { rateLimit } from 'express-rate-limit';
-import { ApiError } from '../../core/ApiError.js';
+import { TooManyRequestsError } from '../../core/ApiError.js';
+import config from '../../config/index.js';
 
 export const executionRateLimit = rateLimit({
   windowMs: 60 * 1000,
-  max: 10,
+  max: config.RATE_LIMIT?.EXECUTIONS_PER_MINUTE || 10,
   handler: (req, res, next) => {
-    throw new ApiError(
-      429,
+    throw new TooManyRequestsError(
       'Too many execution requests, please try again after a minute'
     );
   },
@@ -16,10 +16,9 @@ export const executionRateLimit = rateLimit({
 
 export const sessionRateLimit = rateLimit({
   windowMs: 60 * 1000,
-  max: 60,
+  max: config.RATE_LIMIT?.SESSIONS_PER_MINUTE || 60,
   handler: (req, res, next) => {
-    throw new ApiError(
-      429,
+    throw new TooManyRequestsError(
       'Too many session requests, please try again after a minute'
     );
   },
@@ -29,9 +28,9 @@ export const sessionRateLimit = rateLimit({
 
 export const globalRateLimit = rateLimit({
   windowMs: 60 * 1000,
-  max: 100,
+  max: config.RATE_LIMIT?.GLOBAL_PER_MINUTE || 100,
   handler: (req, res, next) => {
-    throw new ApiError(429, 'Too many requests, please try again later');
+    throw new TooManyRequestsError('Too many requests, please try again later');
   },
   standardHeaders: true,
   legacyHeaders: false,
