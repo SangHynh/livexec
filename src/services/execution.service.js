@@ -74,8 +74,22 @@ const updateExecution = async (id, {
   return result.rows[0];
 };
 
+/**
+ * Find any active execution (QUEUED or RUNNING) for a session
+ * @param {string} sessionId 
+ * @returns {Promise<Object|null>}
+ */
+const getActiveExecutionBySession = async (sessionId) => {
+  const result = await query(
+    'SELECT * FROM executions WHERE session_id = $1 AND status IN ($2, $3) LIMIT 1',
+    [sessionId, 'QUEUED', 'RUNNING']
+  );
+  return result.rows.length > 0 ? result.rows[0] : null;
+};
+
 export default {
   createExecution,
+  getActiveExecutionBySession,
   getExecution,
   updateExecution,
 };

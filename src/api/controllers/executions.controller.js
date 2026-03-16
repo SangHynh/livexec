@@ -18,10 +18,16 @@ export const executeCode = asyncHandler(async (req, res) => {
   // 1. Verify session exists
   const session = await sessionService.getSession(session_id);
 
-  // 2. Create execution record in DB (status: QUEUED)
+  // 2. Idempotency Check: Check if there's already an active execution for this session
+  const activeExecution = await executionService.getActiveExecutionBySession(session.id);
+  if (activeExecution) {
+    return new OkResponse(activeExecution, 'Execution already in progress').send(res);
+  }
+
+  // 3. Create execution record in DB (status: QUEUED)
   const execution = await executionService.createExecution(session.id);
 
-  // 3. Send task to BullMQ queue for processing
+  // 4. Send task to BullMQ queue for processing
   await producer.enqueueExecution(execution.id, session.id);
 
   return new CreatedResponse(execution, 'Execution queued').send(res);

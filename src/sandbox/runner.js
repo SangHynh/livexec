@@ -115,11 +115,21 @@ class SandboxRunner {
         execution_time_ms: 0
       };
     } finally {
-      // 4. Cleanup working directory
-      try {
-        await fs.rm(workingDir, { recursive: true, force: true });
-      } catch (rmError) {
-        console.error('Cleanup error:', rmError);
+      // 4. Cleanup working directory with retry logic for Windows
+      let retries = 3;
+      while (retries > 0) {
+        try {
+          await fs.rm(workingDir, { recursive: true, force: true });
+          break; // Success
+        } catch (rmError) {
+          retries--;
+          if (retries === 0) {
+            console.error(`Final cleanup error for ${workingDir}:`, rmError.message);
+          } else {
+            // Wait 100ms before retrying
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        }
       }
     }
   }
