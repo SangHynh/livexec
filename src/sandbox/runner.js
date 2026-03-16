@@ -105,9 +105,8 @@ class SandboxRunner {
           if (stdout.length < MAX_OUTPUT_SIZE) {
             stdout += data.toString();
             if (stdout.length >= MAX_OUTPUT_SIZE) {
-              stdout =
-                stdout.slice(0, MAX_OUTPUT_SIZE) +
-                '\n[Output truncated due to size limit]';
+              stdout = stdout.slice(0, MAX_OUTPUT_SIZE);
+              stderr += '\n[Output truncated due to size limit]';
             }
           }
         });
