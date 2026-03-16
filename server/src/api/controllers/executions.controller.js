@@ -1,5 +1,6 @@
 import executionService from '../../services/execution.service.js';
 import sessionService from '../../services/session.service.js';
+import producer from '../../queue/producer.js';
 import asyncHandler from '../../core/asyncHandler.js';
 import { CreatedResponse, OkResponse } from '../../core/ApiResponse.js';
 import { BadRequestError } from '../../core/ApiError.js';
@@ -20,7 +21,8 @@ export const executeCode = asyncHandler(async (req, res) => {
   // 2. Create execution record in DB (status: QUEUED)
   const execution = await executionService.createExecution(session.id);
 
-  // TODO: PHASE 3 - Send task to BullMQ queue for sandbox processing
+  // 3. Send task to BullMQ queue for processing
+  await producer.enqueueExecution(execution.id, session.id);
 
   return new CreatedResponse(execution, 'Execution queued').send(res);
 });

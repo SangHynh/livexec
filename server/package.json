@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon server.js",
+    "worker:dev": "nodemon worker.js",
     "start": "node src/app.js",
     "test": "jest"
   },
