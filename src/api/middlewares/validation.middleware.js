@@ -128,9 +128,10 @@ export const detectDangerousPatterns = (req, res, next) => {
   ];
 
   // Step 3: Check normalized code
-  const foundInNormalized = normalizedDangerousPatterns.filter((pattern) =>
-    normalizedCode.includes(pattern.replace(/[\s'"`+\[\]]/g, '').toLowerCase())
-  );
+  const foundInNormalized = normalizedDangerousPatterns.filter((pattern) => {
+    const sanitizedPattern = pattern.replace(/[\s'"`+;.,\[\]]/g, '').toLowerCase();
+    return normalizedCode.includes(sanitizedPattern);
+  });
 
   // Step 4: Check suspicious require combinations
   const suspicious = [];

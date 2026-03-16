@@ -101,7 +101,18 @@ document.getElementById('run-btn').addEventListener('click', async () => {
     // 3. Start Polling
     pollExecutionResult(executionId);
   } catch (error) {
+    console.error('LIVEXEC Error:', error.message);
     logSystem(error.message, true);
+    
+    // Show error in the main terminal area for better visibility
+    const stderr = document.getElementById('stderr');
+    if (stderr) {
+      stderr.textContent = `Error: ${error.message}`;
+    }
+    
+    updateBadge('failed', 'ERROR');
+    document.getElementById('execution-meta').classList.remove('hidden');
+    
     setUIState('IDLE');
   }
 });
