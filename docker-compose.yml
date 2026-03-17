@@ -39,10 +39,10 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - '3000:3000'
+      - '8386:8386'
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=8386
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-livexec}
       - REDIS_URL=redis://redis:6379
       - ALLOWED_LANGUAGES=javascript,python

@@ -13,7 +13,7 @@ livexec lets a platform embed a live coding experience directly inside any task:
 - **Queue-based worker** — BullMQ + Redis decouples ingestion from execution
 - **Sandbox isolation** — each execution runs in its own process with timeout, memory, and output limits
 - **Security hardening** — dangerous pattern detection, rate limiting, UUID validation, execution quotas
-- **Monaco IDE** — bonus browser UI served at `localhost:3000` for demo purposes
+- **Monaco IDE** — bonus browser UI served at `localhost:8386` for demo purposes
 
 **Supported languages:** JavaScript (Node.js 20), Python 3
 
@@ -36,7 +36,7 @@ copy .env.example .env
 docker-compose up --build
 ```
 
-Visit `http://localhost:3000` — the IDE is live.
+Then visit `http://localhost:8386` — the IDE is live.
 
 ### Option 2 — Local Dev
 
@@ -62,7 +62,7 @@ This starts both the API server and worker concurrently with hot reload.
 
 ## Environment Variables
 ```env
-PORT=3000
+PORT=8386
 DATABASE_URL=postgresql://<user>:<password>@localhost:5432/livexec
 REDIS_URL=redis://localhost:6379
 ALLOWED_LANGUAGES=javascript,python
