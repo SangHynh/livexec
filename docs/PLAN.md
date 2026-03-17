@@ -137,20 +137,7 @@
 
 ## PHASE 10 — PDF SLIDES
 
-- [ ] Slide 01: Title — livexec | sanghynh
-- [ ] Slide 02: Problem statement
-- [ ] Slide 03: System architecture diagram
-- [ ] Slide 04: API design — 4 endpoints
-- [ ] Slide 05: Execution lifecycle state machine
-- [ ] Slide 06: Queue design — BullMQ flow
-- [ ] Slide 07: Sandbox — child_process vs Docker
-- [ ] Slide 08: Polling vs WebSocket vs SSE trade-off
-- [ ] Slide 09: Database schema
-- [ ] Slide 10: Security & hardening
-- [ ] Slide 11: Scalability considerations
-- [ ] Slide 12: Trade-offs & decisions
-- [ ] Slide 13: What I'd improve
-- [ ] Slide 14: GitHub + demo link
+- [ ] PDF slides 10-15 pages exported
 
 ---
 

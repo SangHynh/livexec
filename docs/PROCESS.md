@@ -98,6 +98,12 @@ Stack overflow crashes in ~50ms but BullMQ retries the job 3 times with exponent
 **Job TTL as a resilience layer.**
 Added a job age check in the worker: if a job has been queued for longer than 60 seconds, skip it and mark FAILED. This prevents stale executions from running if the queue backed up during a worker restart — the user has likely already moved on.
 
+**Git as a safety net.**
+Commits were made frequently after each small milestone. When one AI session without full context led the implementation down the wrong path, it was possible to `git log`, identify the last stable commit, and roll back cleanly — losing less than 30 minutes of work. This reinforced the habit: commit after every working state, not just at the end of a phase.
+
+**Test failure is signal, not blocker.**
+Two test cases failed repeatedly — TC-4.1.4 (stack overflow) and TC-2.2.1 (DB persistence). Instead of skipping or hardcoding a pass, both were debugged to root cause: BullMQ retry timing and shared worker state in the test environment. Real fixes, not workarounds.
+
 ---
 
 ## 5. What I'd Do Differently
@@ -110,6 +116,20 @@ The in-memory rate limiter caused test isolation issues and won't work correctly
 
 **Structured logging earlier.**
 `console.log` throughout made debugging harder than necessary. Winston or Pino with structured JSON output and trace IDs would have made the queue → worker → DB flow much easier to follow.
+
+## 6. Timeline
+
+**Day 1** — Full implementation from scratch:
+- Phase 0–8 complete: project setup, DB, API layer, queue + worker, sandbox runner, Monaco IDE, security hardening, Docker
+- All 4 endpoints working end-to-end
+- Basic test coverage in place
+
+**Day 2 (morning)** — Polish and docs:
+- Fixed failing test cases (TC-4.1.4 stack overflow retry timing, TC-2.2.1 DB persistence)
+- Added error code system (`errorCode` field on all API errors)
+- Refactored Redis to factory pattern — fixed `ECONNRESET` in test environment
+- Brought all 29 test cases to passing
+- Wrote DESIGN.md, TEST_PLAN.md, PROCESS.md, README.md, PLAN.md
 
 ---
 
