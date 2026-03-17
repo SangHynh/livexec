@@ -137,17 +137,16 @@
 
 ## PHASE 10 — PDF SLIDES
 
-- [ ] PDF slides 10-15 pages exported
+- [x] PDF slides 10-15 pages exported
 
 ---
 
 ## SUBMIT CHECKLIST
 
-- [ ] GitHub repo public
-- [ ] Grant access: edtronaut@gmail.com
+- [x] GitHub repo public
 - [ ] `docker-compose up --build` one command, no errors
 - [ ] 4 API endpoints working
-- [ ] UI demo at `http://localhost:3000`
+- [ ] UI demo at `http://localhost:8386`
 - [ ] `README.md` complete
 - [ ] `docs/DESIGN.md` complete
 - [ ] `docs/PROCESS.md` complete
