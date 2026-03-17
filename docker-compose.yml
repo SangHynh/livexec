@@ -46,6 +46,11 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-livexec}
       - REDIS_URL=redis://redis:6379
       - ALLOWED_LANGUAGES=javascript,python
+      - NODE_OPTIONS=--max-old-space-size=512
+    deploy:
+      resources:
+        limits:
+          memory: 1G
     restart: always
 
   worker:

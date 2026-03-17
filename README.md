@@ -262,14 +262,22 @@ The worker fetches the latest autosaved code at execution time — consistent wi
 ---
 
 ## Testing
-
 ```bash
-npm run test:unit        # Sandbox runner unit tests
-npm run test:api         # API integration tests (end-to-end with real worker)
-npm run test:security    # Dangerous pattern detection, rate limiting, quotas
-npm run test:resilience  # Memory bomb, stdout flood, CPU bomb, stack overflow, queue TTL
-
+# Local
+npm run test:unit
+npm run test:api
+npm run test:security
+npm run test:resilience
 npm test                 # All suites in order
+
+# Inside Docker
+cd livexec
+
+docker-compose exec server npm run test:unit
+docker-compose exec server npm run test:api
+docker-compose exec server npm run test:security
+docker-compose exec server npm run test:resilience
+
 ```
 
 See [TEST_PLAN.md](./docs/TEST_PLAN.md) for full test case descriptions and methodology.
