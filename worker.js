@@ -9,7 +9,7 @@ import config from './src/config/index.js';
 dotenv.config();
 
 const startWorker = async () => {
-  console.log('Worker process starting...');
+  // console.log('Worker process starting...');
 
   try {
     // 1. Prepare sandbox environment
@@ -25,9 +25,9 @@ const startWorker = async () => {
       const ageMs = Date.now() - jobTimestamp;
       const ttlMs = config.QUEUE?.JOB_TTL_MS || 60000;
 
-      console.log(
+      /* console.log(
         `Processing execution ${executionId} (Session: ${sessionId}). Age: ${ageMs}ms`
-      );
+      ); */
 
       // --- Security/Resilience Layer: Job Expiration Check ---
       if (ageMs > ttlMs) {
@@ -65,9 +65,9 @@ const startWorker = async () => {
           completed_at: true,
         });
 
-        console.log(
+        /* console.log(
           `Execution ${executionId} finished with status: ${result.status}`
-        );
+        ); */
       } catch (error) {
         console.error(`Execution processing error:`, error.message);
         await executionService.updateExecution(executionId, {
@@ -82,7 +82,7 @@ const startWorker = async () => {
     // 3. Initialize the BullMQ consumer
     consumerManager.initConsumer(processExecution);
 
-    console.log('Worker is now live and waiting for tasks!');
+    // console.log('Worker is now live and waiting for tasks!');
   } catch (error) {
     console.error('Failed to start worker:', error.message);
     process.exit(1);

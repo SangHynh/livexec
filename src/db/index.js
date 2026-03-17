@@ -63,7 +63,7 @@ const runMigrations = async () => {
 
     try {
       await pool.query(sql);
-      console.log(`Migration ${file} executed successfully`);
+      // console.log(`Migration ${file} executed successfully`);
     } catch (error) {
       console.error(`Error executing migration ${file}:`, error);
       throw error;

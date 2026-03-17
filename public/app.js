@@ -48,7 +48,7 @@ async function createSession() {
     }
     
     currentSessionId = result.data.id;
-    console.log('Session Created:', currentSessionId);
+    // console.log('Session Created:', currentSessionId);
   } catch (error) {
     logSystem(error.message, true);
   }

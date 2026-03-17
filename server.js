@@ -11,11 +11,11 @@ const startServer = async () => {
     await runMigrations();
 
     const server = app.listen(PORT, () => {
-      console.log('---------------------------------------------------------');
-      console.log(`🚀 Server is running on port ${PORT}`);
-      console.log(`🏥 Health: http://localhost:${PORT}/health`);
-      console.log(`🔗 Live: http://localhost:${PORT}`);
-      console.log('---------------------------------------------------------');
+      // console.log('---------------------------------------------------------');
+      console.log(`🚀 Server on port ${PORT}`);
+      // console.log(`🏥 Health: http://localhost:${PORT}/health`);
+      // console.log(`🔗 Live: http://localhost:${PORT}`);
+      // console.log('---------------------------------------------------------');
     });
 
     // Graceful shutdown
