@@ -122,7 +122,7 @@ export const detectDangerousPatterns = (req, res, next) => {
     'process.binding',
     'process.mainModule',
     'eval(',
-    'Function(', // new Function('return process')() bypass
+    'new Function(', // new Function('return process')() bypass
     'os.system',
     'subprocess.run',
     'subprocess.call',
@@ -161,7 +161,7 @@ export const detectDangerousPatterns = (req, res, next) => {
   const foundPlain = plainDangerousPatterns.filter(
     (kw) =>
       processedCode.toLowerCase().includes(kw.toLowerCase()) ||
-      normalizedCode.includes(kw.replace(/[\s'"`+\[\]]/g, '').toLowerCase())
+      normalizedCode.includes(kw.replace(/[\s'"`+;.,\[\]]/g, '').toLowerCase())
   );
 
   const allFound = [
