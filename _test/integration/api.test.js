@@ -5,14 +5,16 @@ import consumerManager from '../../src/queue/consumer.js';
 import executionService from '../../src/services/execution.service.js';
 import sessionService from '../../src/services/session.service.js';
 import sandboxRunner from '../../src/sandbox/runner.js';
-import redisConnection from '../../src/config/redis.js';
+import redisConnection, { createRedisConnection } from '../../src/config/redis.js';
 import producer from '../../src/queue/producer.js';
 
 describe('API Integration Tests', () => {
   let sessionId;
   let testWorker;
+  let localRedis;
 
   beforeAll(async () => {
+    localRedis = createRedisConnection();
     await sandboxRunner.prepare();
 
     // Start a test worker to process jobs during integration tests
@@ -50,14 +52,19 @@ describe('API Integration Tests', () => {
   afterAll(async () => {
     if (testWorker) await testWorker.close();
     await producer.executionQueue.close();
+    await new Promise((r) => setTimeout(r, 500));
     await pool.end();
+    await localRedis.quit();
     await redisConnection.quit();
-  });
+  }, 15000);
 
   test('TC-2.1.1: Should create a new code session', async () => {
     const res = await request(app)
       .post('/code-sessions')
-      .send({ language: 'javascript', source_code: 'setTimeout(() => console.log("init"), 500)' });
+      .send({
+        language: 'javascript',
+        source_code: 'setTimeout(() => console.log("init"), 500)',
+      });
 
     expect(res.status).toBe(201);
     expect(res.body.data).toHaveProperty('id');

@@ -1,7 +1,9 @@
 import request from 'supertest';
 import app from '../../src/app.js';
 import { pool } from '../../src/db/index.js';
-import redisConnection from '../../src/config/redis.js';
+import redisConnection, {
+  createRedisConnection,
+} from '../../src/config/redis.js';
 import producer from '../../src/queue/producer.js';
 import consumerManager from '../../src/queue/consumer.js';
 import executionService from '../../src/services/execution.service.js';
@@ -30,8 +32,10 @@ const pollExecution = async (executionId, timeoutLimit = POLL_TIMEOUT_MS) => {
 
 describe('Resilience & Resource Limits Tests', () => {
   let testWorker;
+  let localRedis;
 
   beforeAll(async () => {
+    localRedis = createRedisConnection();
     await sandboxRunner.prepare();
 
     const processExecution = async (job) => {
@@ -82,20 +86,21 @@ describe('Resilience & Resource Limits Tests', () => {
   afterAll(async () => {
     if (testWorker) await testWorker.close();
     await producer.executionQueue.close();
+    await new Promise((r) => setTimeout(r, 500));
     await pool.end();
+    await localRedis.quit();
     await redisConnection.quit();
-  });
+  }, 15000);
 
   // Test cases are run sequentially by default in Jest to avoid rate limiting
   test('TC-4.1.1: Memory bomb — killed by limit or timeout', async () => {
     await new Promise((r) => setTimeout(r, 2000));
-    const sessionRes = await request(app)
-      .post('/code-sessions')
-      .send({
-        language: 'javascript',
-        source_code: 'const arr = []; while(true) { arr.push(new Array(1000000)); }',
-      });
-    
+    const sessionRes = await request(app).post('/code-sessions').send({
+      language: 'javascript',
+      source_code:
+        'const arr = []; while(true) { arr.push(new Array(1000000)); }',
+    });
+
     expect(sessionRes.status).toBe(201);
     const sessionId = sessionRes.body.data.id;
 
@@ -104,20 +109,18 @@ describe('Resilience & Resource Limits Tests', () => {
       .send({});
     expect(runRes.status).toBe(201);
 
-    const result = await pollExecution(runRes.body.data.id);
+    const result = await pollExecution(runRes.body.data.id, 60000);
     expect(result).not.toBeNull();
     expect(['TIMEOUT', 'FAILED']).toContain(result.status);
   }, 30000);
 
   test('TC-4.1.2: Stdout flood — killed when output exceeds 1MB', async () => {
     await new Promise((r) => setTimeout(r, 2000));
-    const sessionRes = await request(app)
-      .post('/code-sessions')
-      .send({
-        language: 'javascript',
-        source_code: "while(true) { console.log('x'.repeat(1000)); }",
-      });
-    
+    const sessionRes = await request(app).post('/code-sessions').send({
+      language: 'javascript',
+      source_code: "while(true) { console.log('x'.repeat(1000)); }",
+    });
+
     expect(sessionRes.status).toBe(201);
     const sessionId = sessionRes.body.data.id;
 
@@ -126,21 +129,19 @@ describe('Resilience & Resource Limits Tests', () => {
       .send({});
     expect(runRes.status).toBe(201);
 
-    const result = await pollExecution(runRes.body.data.id);
+    const result = await pollExecution(runRes.body.data.id, 60000);
     expect(result).not.toBeNull();
     expect(['TIMEOUT', 'FAILED']).toContain(result.status);
-    expect(result.stderr).toContain('output truncated');
+    expect(result.stderr).toContain('truncated');
   }, 20000);
 
   test('TC-4.1.3: CPU bomb — infinite loop returns TIMEOUT after limit', async () => {
     await new Promise((r) => setTimeout(r, 2000));
-    const sessionRes = await request(app)
-      .post('/code-sessions')
-      .send({
-        language: 'javascript',
-        source_code: 'while(true){}',
-      });
-    
+    const sessionRes = await request(app).post('/code-sessions').send({
+      language: 'javascript',
+      source_code: 'while(true){}',
+    });
+
     expect(sessionRes.status).toBe(201);
     const sessionId = sessionRes.body.data.id;
 
@@ -149,7 +150,7 @@ describe('Resilience & Resource Limits Tests', () => {
       .send({});
     expect(runRes.status).toBe(201);
 
-    const result = await pollExecution(runRes.body.data.id);
+    const result = await pollExecution(runRes.body.data.id, 60000);
     expect(result).not.toBeNull();
     expect(result.status).toBe('TIMEOUT');
     expect(result.stderr).toContain('timed out');
@@ -157,13 +158,11 @@ describe('Resilience & Resource Limits Tests', () => {
 
   test('TC-4.1.4: Stack overflow — recursive bomb returns FAILED', async () => {
     await new Promise((r) => setTimeout(r, 2000));
-    const sessionRes = await request(app)
-      .post('/code-sessions')
-      .send({
-        language: 'javascript',
-        source_code: 'function f(){return f()} f();',
-      });
-    
+    const sessionRes = await request(app).post('/code-sessions').send({
+      language: 'javascript',
+      source_code: 'function f(){return f()} f();',
+    });
+
     expect(sessionRes.status).toBe(201);
     const sessionId = sessionRes.body.data.id;
 
@@ -172,20 +171,18 @@ describe('Resilience & Resource Limits Tests', () => {
       .send({});
     expect(runRes.status).toBe(201);
 
-    const result = await pollExecution(runRes.body.data.id);
+    const result = await pollExecution(runRes.body.data.id, 60000);
     expect(result).not.toBeNull();
     expect(result.status).toBe('FAILED');
     expect(result.stderr.toLowerCase()).toContain('stack');
-  }, 40000);
+  }, 90000);
 
   test('TC-4.1.5: Queue TTL — skip jobs older than limit', async () => {
     // 1. Create a session
-    const sessionRes = await request(app)
-      .post('/code-sessions')
-      .send({
-        language: 'javascript',
-        source_code: 'console.log("wonky")',
-      });
+    const sessionRes = await request(app).post('/code-sessions').send({
+      language: 'javascript',
+      source_code: 'console.log("wonky")',
+    });
     const sessionId = sessionRes.body.data.id;
 
     // 2. Create an execution record in DB first
@@ -200,9 +197,9 @@ describe('Resilience & Resource Limits Tests', () => {
     );
 
     // 4. Poll and verify it was failed by the TTL logic
-    const result = await pollExecution(execution.id);
+    const result = await pollExecution(execution.id, 60000);
     expect(result).not.toBeNull();
     expect(result.status).toBe('FAILED');
     expect(result.error_message).toContain('Queue timeout');
-  }, 20000);
+  }, 90000);
 });

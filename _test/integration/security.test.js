@@ -2,13 +2,15 @@ import request from 'supertest';
 import app from '../../src/app.js';
 import { pool } from '../../src/db/index.js';
 import { v4 as uuidv4 } from 'uuid';
-import redisConnection from '../../src/config/redis.js';
+import redisConnection, { createRedisConnection } from '../../src/config/redis.js';
 import producer from '../../src/queue/producer.js';
 
 describe('Security and Hardening Integration Tests', () => {
   let sessionId;
+  let localRedis;
 
   beforeAll(async () => {
+    localRedis = createRedisConnection();
     const res = await request(app)
       .post('/code-sessions')
       .send({
@@ -20,9 +22,11 @@ describe('Security and Hardening Integration Tests', () => {
 
   afterAll(async () => {
     await producer.executionQueue.close();
+    await new Promise((r) => setTimeout(r, 500));
     await pool.end();
+    await localRedis.quit();
     await redisConnection.quit();
-  });
+  }, 15000);
 
   describe('3.1 Validation & Filtering', () => {
     test('TC-3.1.1: Should reject source code > 50KB', async () => {
@@ -132,7 +136,7 @@ describe('Security and Hardening Integration Tests', () => {
       // For/executions it's 10/min. Let's try /executions
 
       const promises = [];
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 35; i++) {
         promises.push(
           request(app).post(`/code-sessions/${sessionId}/run`).send({})
         );

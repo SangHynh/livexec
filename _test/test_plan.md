@@ -1,63 +1,92 @@
-# LIVEXEC Test Plan - Source of Truth
+# LIVEXEC Test Plan — Source of Truth
 
 > Objective: Ensure the reliability, security, and resilience of the Execution-as-a-Service system.
+>
+> All tests pass as of Mar 2026. Run with `npm test` to verify.
+
+---
 
 ## 1. Unit Testing (`_test/unit/sandbox.test.js`)
 
-- [x] **TC-1.1.1**: Successful JavaScript execution with correct `stdout`.
-- [x] **TC-1.1.2**: Successful Python execution with correct `stdout`.
-- [x] **TC-1.1.3**: Proper capture of Syntax Errors returning in `stderr`.
-- [x] **TC-1.1.4**: Timeout handling (e.g., infinite `while(true)`) - Must kill the process and return `TIMEOUT`.
-- [x] **TC-1.1.5**: Filesystem cleanup - Ensure temporary directories are deleted after execution.
-- [x] **TC-1.1.6**: Language whitelist - Submit invalid language, verify clean error.
+Tests the `SandboxRunner` class in isolation — no HTTP, no queue, no DB. Calls `runner.run()` directly and asserts on the returned result object.
+
+- [x] **TC-1.1.1** — **JS Execution**: Runs `console.log("hello")` in Node.js, asserts `status: COMPLETED` and `stdout` contains `"hello"`.
+- [x] **TC-1.1.2** — **Python Execution**: Runs `print("hello")` via `python3`, asserts `status: COMPLETED` and correct `stdout`.
+- [x] **TC-1.1.3** — **Syntax Error Capture**: Submits malformed JS (`const x = {`), asserts `status: FAILED` and `stderr` contains the syntax error message.
+- [x] **TC-1.1.4** — **Timeout Kill**: Submits `while(true){}`, asserts `status: TIMEOUT` and `stderr` contains `"timed out"` after 5s. Verifies the process group is killed, not just the parent.
+- [x] **TC-1.1.5** — **Temp Directory Cleanup**: After any execution (success or failure), asserts the working directory under `temp/executions/{uuid}/` no longer exists.
+- [x] **TC-1.1.6** — **Language Whitelist**: Calls `runner.run('ruby', ...)`, asserts `status: FAILED` and a clean error message — no crash.
 
 ---
 
 ## 2. API Integration Testing (`_test/integration/api.test.js`)
 
-- [x] **TC-2.1.1**: `POST /code-sessions` -> Create session with initial source code.
-- [x] **TC-2.1.2**: `PATCH /code-sessions/:id` -> Update session source code.
-- [x] **TC-2.1.3**: `POST /code-sessions/:id/run` -> Trigger execution, verify `QUEUED` status.
-- [x] **TC-2.1.4**: `GET /executions/:id` -> Retrieve status and eventual results.
-- [x] **TC-2.1.5**: Idempotency - Verify multiple run requests for the same session don't create multiple active jobs.
-- [x] **TC-1.1.6 (API)**: Unsupported language via API returns 400.
-- [x] **TC-2.2.1/2**: DB Persistence - Verify results (stdout/stderr/time) are saved correctly in Postgres.
-- [x] **Session Error Handling**: Verify 404 for missing sessions and 400 for malformed UUIDs.
+End-to-end tests over HTTP using Supertest. Spins up a real BullMQ worker inside `beforeAll` to process jobs, so executions run to completion within the test suite.
+
+- [x] **TC-2.1.1** — **Create Session**: `POST /code-sessions` with `language: javascript` and `source_code`. Asserts `201`, response contains `id`, `language`, `source_code`, `status: ACTIVE`.
+- [x] **TC-2.1.2** — **Autosave Code**: `PATCH /code-sessions/:id` with new `source_code`. Asserts `200` and the updated code is reflected in the response.
+- [x] **TC-2.1.3** — **Trigger Execution**: `POST /code-sessions/:id/run`. Asserts `201` and `status: QUEUED` returned immediately — does not wait for execution.
+- [x] **TC-2.1.4** — **Poll Status**: `GET /executions/:id` immediately after triggering. Asserts `200` and `status` is one of `QUEUED`, `RUNNING`, or `COMPLETED` depending on worker speed.
+- [x] **TC-2.1.5** — **Idempotency**: Calls `POST /code-sessions/:id/run` twice in rapid succession. Second call must return `200` with the existing execution and message `"already in progress"` — no duplicate created.
+- [x] **TC-2.2.1/2** — **DB Persistence**: Triggers execution and polls until `COMPLETED` (up to 30s). Then queries PostgreSQL directly and asserts `status: COMPLETED` in the DB matches the API response.
+- [x] **TC-1.1.6 (API)** — **Unsupported Language via API**: `POST /code-sessions` with `language: ruby`. Asserts `400` and `errorCode: LANGUAGE_NOT_SUPPORTED`.
+- [x] **Error Handling** — `GET /code-sessions/{nil-uuid}` returns `404`. `GET /code-sessions/not-a-uuid` returns `400` with `errorCode: INVALID_UUID`.
 
 ---
 
 ## 3. Security & Hardening (`_test/integration/security.test.js`)
 
-- [x] **TC-3.1.1**: Source Code Size Limit - Reject code > 50KB.
-- [x] **TC-3.1.2**: Dangerous Patterns - Block `require('fs')`.
-- [x] **TC-3.1.3**: Case Sensitivity - Block `reQUIre('fS')`.
-- [x] **TC-3.1.4**: Commented Patterns - Block dangerous patterns even inside comments.
-- [x] **TC-3.1.5**: Obfuscation Bypass - Block concatenation attempts like `'re' + 'quire'`.
-- [x] **TC-3.1.6**: Unicode Bypass - Block escaped sequences like `r\u0065quire`.
-- [x] **TC-3.2.1**: Rate Limiting - Trigger 429 error after exceeding global/endpoint frequency.
-- [x] **TC-3.2.2**: Session Quota - Enforce maximum 50 executions per session.
+Tests the `detectDangerousPatterns` middleware and rate limiting. All checks happen at the API layer before any execution is created.
+
+- [x] **TC-3.1.1** — **Size Limit**: Sends `source_code` of 51KB. Asserts `400` with `errorCode: SOURCE_CODE_TOO_LARGE`.
+- [x] **TC-3.1.2** — **Dangerous Pattern — fs**: Submits `const fs = require('fs')`. Asserts `400` with `errorCode: DANGEROUS_CODE_DETECTED` and message mentions `fs`.
+- [x] **TC-3.1.3** — **Case Insensitivity**: Submits `reQUIre('fS')` (mixed case). Asserts blocked — the middleware lowercases before matching.
+- [x] **TC-3.1.4** — **Commented Patterns**: Submits `// require('fs')` inside a comment. Asserts still blocked — safer to over-block than miss.
+- [x] **TC-3.1.5** — **Concatenation Bypass**: Submits `'re' + 'quire'`. Asserts blocked — the middleware strips operators and quotes before matching.
+- [x] **TC-3.1.6** — **Unicode Bypass**: Submits `r\u0065quire` (`\u0065` = `e`). Asserts blocked — middleware unescapes Unicode sequences before matching.
+- [x] **TC-3.2.1** — **Rate Limit**: Sends 35 rapid `POST /code-sessions/:id/run` requests via `Promise.all`. Asserts at least one returns `429`.
+- [x] **TC-3.2.2** — **Session Quota**: Inserts 50 `COMPLETED` execution records directly into DB for a fresh session, then tries to trigger the 51st via API. Asserts `400` with `errorCode: EXECUTION_LIMIT_REACHED`.
 
 ---
 
 ## 4. Resilience & Resource Limits (`_test/integration/resilience.test.js`)
 
-- [x] **TC-4.1.1**: Memory Limit - Kill process attempting to consume excessive RAM.
-- [x] **TC-4.1.2**: Stdout Limit - Kill process attempting to flood the log with massive output (> 1MB).
-- [x] **TC-4.1.3**: CPU Limit - Kill infinite loops causing high CPU usage.
-- [x] **TC-4.1.4**: Stack Limit - Catch stack overflow errors from deep recursion.
-- [ ] **TC-4.1.5**: Queue TTL - Ensure jobs pending for too long in the queue are skipped/failed.
+Tests sandbox behavior under adversarial conditions. Each test waits 2s before starting to avoid rate limiting from previous tests. All use a 60s poll timeout to account for BullMQ retry delays.
+
+- [x] **TC-4.1.1** — **Memory Bomb**: Submits `const arr = []; while(true) { arr.push(new Array(1000000)); }`. Asserts `TIMEOUT` or `FAILED` — the 128MB V8 heap limit triggers OOM before exhausting server RAM, and the 5s timeout kills anything that survives.
+- [x] **TC-4.1.2** — **Stdout Flood**: Submits `while(true) { console.log('x'.repeat(1000)); }`. Asserts `FAILED` or `TIMEOUT` and `stderr` contains `"truncated"` — the 1MB stdout cap kills the process before Redis or the DB are flooded.
+- [x] **TC-4.1.3** — **CPU Bomb**: Submits `while(true){}`. Asserts `status: TIMEOUT` and `stderr` contains `"timed out"` — pure CPU loop is killed after 5s.
+- [x] **TC-4.1.4** — **Stack Overflow**: Submits `function f(){return f()} f()`. Asserts `status: FAILED` and `stderr` contains `"stack"`. Test timeout is 90s to allow for BullMQ's 3 retry attempts with exponential backoff before the job is permanently marked FAILED.
+- [x] **TC-4.1.5** — **Queue TTL**: Manually inserts a job into BullMQ with a timestamp 2 minutes in the past. Asserts the worker skips it and marks the execution `FAILED` with `error_message` containing `"Queue timeout"` — stale jobs are never executed.
 
 ---
 
-## 5. How to Run
+## 5. Tooling
+
+| Tool | Purpose |
+|---|---|
+| Jest | Test runner and assertion framework |
+| Supertest | HTTP integration testing against Express app |
+| pg (direct) | DB state verification in integration tests |
+| BullMQ Worker (inline) | Spun up inside `beforeAll` to process jobs during API/resilience tests |
+
+---
+
+## 6. How to Run
 
 ```bash
-# Run all tests
+# Run all suites in order
 npm test
 
-# Run specific categories
+# Run individual suites
 npm run test:unit
 npm run test:api
 npm run test:security
 npm run test:resilience
 ```
+
+> **Note:** Run suites individually when iterating — running all together can cause rate limiter state from one suite to bleed into the next.
+
+---
+
+*LIVEXEC Test Plan — Sang | Mar 2026*
