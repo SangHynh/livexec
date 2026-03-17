@@ -25,11 +25,6 @@ const ensureDatabaseExists = async () => {
   const rootUrl = config.DATABASE_URL.replace(`/${dbName}`, '/postgres');
 
   const tempPoolConfig = { connectionString: rootUrl };
-  if (isProduction) {
-    tempPoolConfig.ssl = {
-      rejectUnauthorized: false,
-    };
-  }
   const tempPool = new Pool(tempPoolConfig);
 
   try {
