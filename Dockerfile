@@ -17,7 +17,7 @@ COPY . .
 # Ensure temp directory exists and has correct permissions
 RUN mkdir -p temp/executions && chmod -R 777 temp
 
-EXPOSE 3000
+EXPOSE 8386
 
 # Default command (will be overridden by docker-compose)
 CMD ["npm", "run", "dev"]

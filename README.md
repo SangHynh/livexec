@@ -63,9 +63,13 @@ This starts both the API server and worker concurrently with hot reload.
 ## Environment Variables
 ```env
 PORT=8386
-DATABASE_URL=postgresql://<user>:<password>@localhost:5432/livexec
+DATABASE_URL=postgresql://<user>:<password>@db:5432/livexec
 REDIS_URL=redis://localhost:6379
 ALLOWED_LANGUAGES=javascript,python
+
+POSTGRES_USER=user
+POSTGRES_PASSWORD=password
+POSTGRES_DB=livexec
 ```
 
 See `.env.example` for the full list.
