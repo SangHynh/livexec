@@ -9,7 +9,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies including devDeps for testing if needed in container
-RUN npm ci
+RUN npm ci --include=dev
 
 # Copy the rest of the application
 COPY . .
