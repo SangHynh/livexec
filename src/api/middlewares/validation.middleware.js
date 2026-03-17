@@ -22,7 +22,7 @@ export const validateUuid = (params = []) => {
     });
 
     if (errors.length > 0) {
-      throw new BadRequestError(errors.join(', '));
+      throw new BadRequestError(errors.join(', '), 'INVALID_UUID');
     }
 
     next();
@@ -35,7 +35,10 @@ export const limitSourceCodeSize = (
   return (req, res, next) => {
     const sourceCode = req.body.source_code;
     if (sourceCode && Buffer.byteLength(sourceCode, 'utf8') > maxKb * 1024) {
-      throw new BadRequestError(`Source code exceeds limit of ${maxKb}KB`);
+      throw new BadRequestError(
+        `Source code exceeds limit of ${maxKb}KB`,
+        'SOURCE_CODE_TOO_LARGE'
+      );
     }
     next();
   };
@@ -159,7 +162,8 @@ export const detectDangerousPatterns = (req, res, next) => {
 
   if (allFound.length > 0) {
     throw new BadRequestError(
-      `Potentially dangerous code detected: ${allFound.join(', ')}`
+      `Potentially dangerous code detected: ${allFound.join(', ')}`,
+      'DANGEROUS_CODE_DETECTED'
     );
   }
 

@@ -16,7 +16,8 @@ export const createSession = asyncHandler(async (req, res) => {
 
   if (!config.ALLOWED_LANGUAGES.includes(language)) {
     throw new BadRequestError(
-      `Language "${language}" is not supported. Supported: ${config.ALLOWED_LANGUAGES.join(', ')}`
+      `Language "${language}" is not supported. Supported: ${config.ALLOWED_LANGUAGES.join(', ')}`,
+      'LANGUAGE_NOT_SUPPORTED'
     );
   }
 
@@ -43,7 +44,10 @@ export const updateSession = asyncHandler(async (req, res) => {
   const { language, source_code, status } = req.body;
 
   if (language && !config.ALLOWED_LANGUAGES.includes(language)) {
-    throw new BadRequestError(`Language "${language}" is not supported`);
+    throw new BadRequestError(
+      `Language "${language}" is not supported`,
+      'LANGUAGE_NOT_SUPPORTED'
+    );
   }
 
   const session = await sessionService.updateSession(session_id, {

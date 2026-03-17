@@ -31,7 +31,8 @@ export const executeCode = asyncHandler(async (req, res) => {
   const maxLimit = config.RATE_LIMIT?.MAX_EXECUTIONS_PER_SESSION || 50;
   if (totalExecutions >= maxLimit) {
     throw new BadRequestError(
-      `Maximum execution limit (${maxLimit}) reached for this session`
+      `Maximum execution limit (${maxLimit}) reached for this session`,
+      'EXECUTION_LIMIT_REACHED'
     );
   }
 
