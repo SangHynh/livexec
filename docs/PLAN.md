@@ -144,20 +144,15 @@
 ## SUBMIT CHECKLIST
 
 - [x] GitHub repo public
-- [ ] `docker-compose up --build` one command, no errors
-- [ ] 4 API endpoints working
-- [ ] UI demo at `http://localhost:8386`
-- [ ] `README.md` complete
-- [ ] `docs/DESIGN.md` complete
-- [ ] `docs/PROCESS.md` complete
-- [ ] `docs/TEST_PLAN.md` complete
-- [ ] `docs/PLAN.md` complete
-- [ ] PDF slides 10-15 pages exported
-- [ ] Email sent:
-  - **To**: hr@edtronaut.ai
-  - **CC**: tram@edtronaut.ai
-  - **Subject**: [SWE Backend Intern] Take-home Assignment — Huynh Van Sang
-  - **Body**: brief intro + GitHub link + attach PDF
+- [x] `docker-compose up --build` one command, no errors
+- [x] 4 API endpoints working
+- [x] UI demo at `http://localhost:8386`
+- [x] `docs/DESIGN.md` complete
+- [x] `docs/PROCESS.md` complete
+- [x] `docs/TEST_PLAN.md` complete
+- [x] PDF slides 10-15 pages exported
+- [x] `README.md` complete
+- [x] `docs/PLAN.md` complete
 
 ---
 
