@@ -71,7 +71,7 @@ export const detectDangerousPatterns = (req, res, next) => {
     processedCode = sourceCode.replace(/\\u([0-9a-fA-F]{4})/g, (match, grp) => {
       return String.fromCharCode(parseInt(grp, 16));
     });
-  } catch (e) {
+  } catch (_e) {
     // Keep original if unescaping fails
   }
 
@@ -95,8 +95,8 @@ export const detectDangerousPatterns = (req, res, next) => {
     'require(vm)',
     'process.exit',
     'process.env',
-    'process.binding',       // Low-level Node.js binding bypass
-    'process.mainmodule',    // Access to main module paths
+    'process.binding', // Low-level Node.js binding bypass
+    'process.mainmodule', // Access to main module paths
     'eval(',
     'os.system',
     'os.popen',
@@ -104,8 +104,8 @@ export const detectDangerousPatterns = (req, res, next) => {
     'subprocess.run',
     'subprocess.call',
     'subprocess.popen',
-    'importlib',             // Python dynamic import
-    '__import__',            // Python built-in import bypass
+    'importlib', // Python dynamic import
+    '__import__', // Python built-in import bypass
     'rm-rf',
     'chmod',
     'chown',
@@ -122,20 +122,22 @@ export const detectDangerousPatterns = (req, res, next) => {
     'process.binding',
     'process.mainModule',
     'eval(',
-    'Function(',             // new Function('return process')() bypass
+    'Function(', // new Function('return process')() bypass
     'os.system',
     'subprocess.run',
     'subprocess.call',
     '__import__',
     'importlib',
-    'vm.runInNewContext',    // Node.js vm module sandbox escape
+    'vm.runInNewContext', // Node.js vm module sandbox escape
     'vm.runInThisContext',
     'vm.Script',
   ];
 
   // Step 3: Check normalized code
   const foundInNormalized = normalizedDangerousPatterns.filter((pattern) => {
-    const sanitizedPattern = pattern.replace(/[\s'"`+;.,\[\]]/g, '').toLowerCase();
+    const sanitizedPattern = pattern
+      .replace(/[\s'"`+;.,\[\]]/g, '')
+      .toLowerCase();
     return normalizedCode.includes(sanitizedPattern);
   });
 
@@ -143,7 +145,10 @@ export const detectDangerousPatterns = (req, res, next) => {
   const suspicious = [];
   if (normalizedCode.includes('require') && normalizedCode.includes('(fs)'))
     suspicious.push('require + fs');
-  if (normalizedCode.includes('require') && normalizedCode.includes('(child_process)'))
+  if (
+    normalizedCode.includes('require') &&
+    normalizedCode.includes('(child_process)')
+  )
     suspicious.push('require + child_process');
   if (normalizedCode.includes('require') && normalizedCode.includes('(vm)'))
     suspicious.push('require + vm (sandbox escape risk)');
@@ -153,12 +158,15 @@ export const detectDangerousPatterns = (req, res, next) => {
     suspicious.push('require + os');
 
   // Step 5: Check plain keywords
-  const foundPlain = plainDangerousPatterns.filter((kw) =>
-    processedCode.toLowerCase().includes(kw.toLowerCase()) ||
-    normalizedCode.includes(kw.replace(/[\s'"`+\[\]]/g, '').toLowerCase())
+  const foundPlain = plainDangerousPatterns.filter(
+    (kw) =>
+      processedCode.toLowerCase().includes(kw.toLowerCase()) ||
+      normalizedCode.includes(kw.replace(/[\s'"`+\[\]]/g, '').toLowerCase())
   );
 
-  const allFound = [...new Set([...foundInNormalized, ...suspicious, ...foundPlain])];
+  const allFound = [
+    ...new Set([...foundInNormalized, ...suspicious, ...foundPlain]),
+  ];
 
   if (allFound.length > 0) {
     throw new BadRequestError(

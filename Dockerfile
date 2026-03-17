@@ -20,4 +20,4 @@ RUN mkdir -p temp/executions && chmod -R 777 temp
 EXPOSE 3000
 
 # Default command (will be overridden by docker-compose)
-CMD ["npm", "start"]
+CMD ["npm", "run", "dev"]

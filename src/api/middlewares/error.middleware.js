@@ -1,6 +1,6 @@
 import { ApiError } from '../../core/ApiError.js';
 
-const errorMiddleware = (err, req, res, next) => {
+const errorMiddleware = (err, _req, res, _next) => {
   let { statusCode, message } = err;
 
   if (!(err instanceof ApiError)) {

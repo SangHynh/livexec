@@ -1,6 +1,13 @@
 export default [
   {
-    ignores: ['node_modules/**', 'dist/**', 'client/**', 'server/dist/**'],
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'client/**',
+      'server/dist/**',
+      'coverage/**',
+      '_test/**',
+    ],
   },
   {
     files: ['**/*.js'],
@@ -13,7 +20,15 @@ export default [
       },
     },
     rules: {
-      'no-unused-vars': 'warn',
+      'no-unused-vars': [
+        'warn',
+        {
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       'no-console': 'off',
     },
   },

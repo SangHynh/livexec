@@ -16,15 +16,21 @@ const keepAlive = () => {
   const interval = config.KEEP_ALIVE_INTERVAL_MS;
   const protocol = url.startsWith('https') ? https : http;
 
-  console.log(`📡 Keep-alive started: pinging ${url} every ${interval / 60000} minutes`);
+  console.log(
+    `📡 Keep-alive started: pinging ${url} every ${interval / 60000} minutes`
+  );
 
   setInterval(() => {
     protocol
       .get(url, (res) => {
-        console.log(`🛰️ Ping success: ${res.statusCode} at ${new Date().toISOString()}`);
+        console.log(
+          `🛰️ Ping success: ${res.statusCode} at ${new Date().toISOString()}`
+        );
       })
       .on('error', (err) => {
-        console.error(`❌ Ping failed: ${err.message} at ${new Date().toISOString()}`);
+        console.error(
+          `❌ Ping failed: ${err.message} at ${new Date().toISOString()}`
+        );
       });
   }, interval);
 };

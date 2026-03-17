@@ -2,7 +2,9 @@ import request from 'supertest';
 import app from '../../src/app.js';
 import { pool } from '../../src/db/index.js';
 import { v4 as uuidv4 } from 'uuid';
-import redisConnection, { createRedisConnection } from '../../src/config/redis.js';
+import redisConnection, {
+  createRedisConnection,
+} from '../../src/config/redis.js';
 import producer from '../../src/queue/producer.js';
 
 describe('Security and Hardening Integration Tests', () => {
@@ -11,12 +13,10 @@ describe('Security and Hardening Integration Tests', () => {
 
   beforeAll(async () => {
     localRedis = createRedisConnection();
-    const res = await request(app)
-      .post('/code-sessions')
-      .send({
-        language: 'javascript',
-        source_code: '// security test session',
-      });
+    const res = await request(app).post('/code-sessions').send({
+      language: 'javascript',
+      source_code: '// security test session',
+    });
     sessionId = res.body.data.id;
   });
 
@@ -40,12 +40,10 @@ describe('Security and Hardening Integration Tests', () => {
     });
 
     test('TC-3.1.2: Should block dangerous patterns (fs)', async () => {
-      const res = await request(app)
-        .post('/code-sessions')
-        .send({
-          language: 'javascript',
-          source_code: "const fs = require('fs');",
-        });
+      const res = await request(app).post('/code-sessions').send({
+        language: 'javascript',
+        source_code: "const fs = require('fs');",
+      });
 
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('dangerous code detected');
@@ -62,12 +60,10 @@ describe('Security and Hardening Integration Tests', () => {
     });
 
     test('TC-3.1.4: Should block dangerous patterns inside comments', async () => {
-      const res = await request(app)
-        .post('/code-sessions')
-        .send({
-          language: 'javascript',
-          source_code: "// I am not dangerous: require('fs')",
-        });
+      const res = await request(app).post('/code-sessions').send({
+        language: 'javascript',
+        source_code: "// I am not dangerous: require('fs')",
+      });
 
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('dangerous code detected');
@@ -75,12 +71,10 @@ describe('Security and Hardening Integration Tests', () => {
 
     test('TC-3.1.5 (Edge Case): Obfuscation attempt 1 (concatenation)', async () => {
       // Now should be BLOCKED by normalization logic
-      const res = await request(app)
-        .post('/code-sessions')
-        .send({
-          language: 'javascript',
-          source_code: "const r = 're' + 'quire'; const fs = r('fs');",
-        });
+      const res = await request(app).post('/code-sessions').send({
+        language: 'javascript',
+        source_code: "const r = 're' + 'quire'; const fs = r('fs');",
+      });
 
       expect(res.status).toBe(400);
       expect(res.body.message).toContain('dangerous code detected');
@@ -101,12 +95,10 @@ describe('Security and Hardening Integration Tests', () => {
   describe('3.2 Rate Limiting & Abuse Prevention', () => {
     test('TC-3.2.2: Should enforce max executions (50) per session', async () => {
       // 1. Create a fresh session to avoid pollution
-      const freshSessionRes = await request(app)
-        .post('/code-sessions')
-        .send({
-          language: 'javascript',
-          source_code: 'console.log("limit test")',
-        });
+      const freshSessionRes = await request(app).post('/code-sessions').send({
+        language: 'javascript',
+        source_code: 'console.log("limit test")',
+      });
       const freshId = freshSessionRes.body.data.id;
 
       // 2. Manually insert 50 completed executions into DB for this session

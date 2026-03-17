@@ -5,7 +5,7 @@ import config from '../../config/index.js';
 export const executionRateLimit = rateLimit({
   windowMs: 60 * 1000,
   max: config.RATE_LIMIT?.EXECUTIONS_PER_MINUTE || 10,
-  handler: (req, res, next) => {
+  handler: (_req, _res, _next) => {
     throw new TooManyRequestsError(
       'Too many execution requests, please try again after a minute'
     );
@@ -17,7 +17,7 @@ export const executionRateLimit = rateLimit({
 export const sessionRateLimit = rateLimit({
   windowMs: 60 * 1000,
   max: config.RATE_LIMIT?.SESSIONS_PER_MINUTE || 60,
-  handler: (req, res, next) => {
+  handler: (_req, _res, _next) => {
     throw new TooManyRequestsError(
       'Too many session requests, please try again after a minute'
     );
@@ -29,7 +29,7 @@ export const sessionRateLimit = rateLimit({
 export const globalRateLimit = rateLimit({
   windowMs: 60 * 1000,
   max: config.RATE_LIMIT?.GLOBAL_PER_MINUTE || 100,
-  handler: (req, res, next) => {
+  handler: (_req, _res, _next) => {
     throw new TooManyRequestsError('Too many requests, please try again later');
   },
   standardHeaders: true,

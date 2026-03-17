@@ -15,7 +15,7 @@ const initConsumer = (processor) => {
     concurrency: config.QUEUE?.CONCURRENCY || 5, // Fallback to 5
   });
 
-  worker.on('completed', (job) => {
+  worker.on('completed', (_job) => {
     // console.log(`Job ${job.id} completed successfully`);
   });
 

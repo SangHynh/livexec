@@ -5,7 +5,9 @@ import consumerManager from '../../src/queue/consumer.js';
 import executionService from '../../src/services/execution.service.js';
 import sessionService from '../../src/services/session.service.js';
 import sandboxRunner from '../../src/sandbox/runner.js';
-import redisConnection, { createRedisConnection } from '../../src/config/redis.js';
+import redisConnection, {
+  createRedisConnection,
+} from '../../src/config/redis.js';
 import producer from '../../src/queue/producer.js';
 
 describe('API Integration Tests', () => {
@@ -59,12 +61,10 @@ describe('API Integration Tests', () => {
   }, 15000);
 
   test('TC-2.1.1: Should create a new code session', async () => {
-    const res = await request(app)
-      .post('/code-sessions')
-      .send({
-        language: 'javascript',
-        source_code: 'setTimeout(() => console.log("init"), 500)',
-      });
+    const res = await request(app).post('/code-sessions').send({
+      language: 'javascript',
+      source_code: 'setTimeout(() => console.log("init"), 500)',
+    });
 
     expect(res.status).toBe(201);
     expect(res.body.data).toHaveProperty('id');

@@ -41,12 +41,12 @@ async function createSession() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ language: lang, source_code: '' }),
     });
-    
+
     const result = await response.json();
     if (!response.ok) {
-        throw new Error(result.message || 'Failed to create session');
+      throw new Error(result.message || 'Failed to create session');
     }
-    
+
     currentSessionId = result.data.id;
     // console.log('Session Created:', currentSessionId);
   } catch (error) {
@@ -68,11 +68,14 @@ document.getElementById('run-btn').addEventListener('click', async () => {
 
   try {
     // 1. Update session with latest code
-    const patchRes = await fetch(`${API_BASE}/code-sessions/${currentSessionId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ source_code: sourceCode, language: language }),
-    });
+    const patchRes = await fetch(
+      `${API_BASE}/code-sessions/${currentSessionId}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source_code: sourceCode, language: language }),
+      }
+    );
 
     if (!patchRes.ok) {
       const errorData = await patchRes.json();
@@ -103,16 +106,16 @@ document.getElementById('run-btn').addEventListener('click', async () => {
   } catch (error) {
     console.error('LIVEXEC Error:', error.message);
     logSystem(error.message, true);
-    
+
     // Show error in the main terminal area for better visibility
     const stderr = document.getElementById('stderr');
     if (stderr) {
       stderr.textContent = `Error: ${error.message}`;
     }
-    
+
     updateBadge('failed', 'ERROR');
     document.getElementById('execution-meta').classList.remove('hidden');
-    
+
     setUIState('IDLE');
   }
 });

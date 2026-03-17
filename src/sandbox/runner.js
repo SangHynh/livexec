@@ -39,9 +39,7 @@ class SandboxRunner {
       javascript: {
         ext: 'js',
         cmd: 'node',
-        args: [
-          `--max-old-space-size=${config.SANDBOX.MEMORY_LIMIT_MB || 128}`,
-        ],
+        args: [`--max-old-space-size=${config.SANDBOX.MEMORY_LIMIT_MB || 128}`],
       },
       python: { ext: 'py', cmd: isWindows ? 'py' : 'python3', args: [] },
     };
@@ -94,7 +92,7 @@ class SandboxRunner {
               // Kill the entire process group on Unix
               process.kill(-child.pid, 'SIGKILL');
             }
-          } catch (e) {
+          } catch (_e) {
             // Process might have already exited
           }
         }, timeoutMs);
@@ -136,7 +134,7 @@ class SandboxRunner {
           });
         });
 
-        child.on('exit', (code, signal) => {
+        child.on('exit', (code, _signal) => {
           clearTimeout(timeout);
           const endTime = process.hrtime(startTime);
           const executionTimeMs = Math.round(
@@ -187,7 +185,7 @@ class SandboxRunner {
         } else {
           process.kill(-child.pid, 'SIGKILL');
         }
-      } catch (e) {
+      } catch (_e) {
         // Ignored
       }
 
@@ -218,7 +216,6 @@ class SandboxRunner {
    */
   stripAnsi(str) {
     if (typeof str !== 'string') return str;
-    // eslint-disable-next-line no-control-regex
     return str.replace(/\u001b\[[0-9;]*[a-zA-Z]/g, '');
   }
 }
