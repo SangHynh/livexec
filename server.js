@@ -2,12 +2,8 @@ import app from './src/app.js';
 import config from './src/config/index.js';
 
 import { runMigrations } from './src/db/index.js';
-import keepAlive from './src/utils/keep-alive.js';
 
 const PORT = config.PORT;
-
-// Start keep-alive pinging
-keepAlive();
 
 const startServer = async () => {
   try {

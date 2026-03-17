@@ -17,13 +17,6 @@ router.get('/health', (req, res) => {
 });
 
 /**
- * Ping route for keep-alive
- */
-router.get('/ping', (req, res) => {
-  res.send('pong');
-});
-
-/**
  * API Routes
  */
 router.use('/code-sessions', sessionsRouter);

@@ -38,10 +38,6 @@ const config = {
     REMOVE_ON_FAIL: 500,
     JOB_TTL_MS: 60000, // 1 minute execution TTL in queue
   },
-
-  // Keep alive configuration
-  APP_URL: process.env.APP_URL || null,
-  KEEP_ALIVE_INTERVAL_MS: 8 * 60 * 1000, // 8 minutes
 };
 
 export default config;

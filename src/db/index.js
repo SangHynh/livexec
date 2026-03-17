@@ -6,19 +6,9 @@ import config from '../config/index.js';
 
 const { Pool } = pg;
 
-const isProduction = process.env.NODE_ENV === 'production';
-const isAiven = config.DATABASE_URL?.includes('aivencloud.com');
-
 const poolConfig = {
   connectionString: config.DATABASE_URL,
 };
-
-// Add SSL for Aiven or Production environments
-if (isProduction || isAiven) {
-  poolConfig.ssl = {
-    rejectUnauthorized: false,
-  };
-}
 
 const pool = new Pool(poolConfig);
 
@@ -35,7 +25,7 @@ const ensureDatabaseExists = async () => {
   const rootUrl = config.DATABASE_URL.replace(`/${dbName}`, '/postgres');
 
   const tempPoolConfig = { connectionString: rootUrl };
-  if (isProduction || isAiven) {
+  if (isProduction) {
     tempPoolConfig.ssl = {
       rejectUnauthorized: false,
     };

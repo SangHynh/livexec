@@ -22,12 +22,16 @@ livexec lets a platform embed a live coding experience directly inside any task:
 ## Quick Start
 
 ### Option 1 — Docker (recommended)
-
 ```bash
 git clone https://github.com/sanghynh/livexec
 cd livexec
 
+# Linux/Mac
 cp .env.example .env
+# Windows
+copy .env.example .env
+
+# Edit .env with your DB and Redis URLs (see Environment Variables below)
 
 docker-compose up --build
 ```
@@ -37,13 +41,18 @@ Visit `http://localhost:3000` — the IDE is live.
 ### Option 2 — Local Dev
 
 **Prerequisites:** Node.js 20+, PostgreSQL 15, Redis 6+
-
 ```bash
-npm install
+git clone https://github.com/sanghynh/livexec
+cd livexec
 
+# Linux/Mac
 cp .env.example .env
+# Windows
+copy .env.example .env
+
 # Edit .env with your local DB and Redis URLs
 
+npm install
 npm run dev
 ```
 
@@ -52,7 +61,6 @@ This starts both the API server and worker concurrently with hot reload.
 ---
 
 ## Environment Variables
-
 ```env
 PORT=3000
 DATABASE_URL=postgresql://<user>:<password>@localhost:5432/livexec
@@ -61,7 +69,6 @@ ALLOWED_LANGUAGES=javascript,python
 ```
 
 See `.env.example` for the full list.
-
 ---
 
 ## API Reference
