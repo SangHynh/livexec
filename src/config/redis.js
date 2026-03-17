@@ -1,16 +1,15 @@
 import Redis from 'ioredis';
 import config from './index.js';
 
-const redisConnection = new Redis(config.REDIS_URL, {
-  maxRetriesPerRequest: null, // Essential for BullMQ
-});
+export const createRedisConnection = () => {
+  const conn = new Redis(config.REDIS_URL, {
+    maxRetriesPerRequest: null,
+  });
+  conn.on('error', (err) =>
+    console.error('Redis connection error:', err.message)
+  );
+  conn.on('connect', () => console.log('Connected to Redis'));
+  return conn;
+};
 
-redisConnection.on('error', (error) => {
-  console.error('Redis connection error:', error.message);
-});
-
-redisConnection.on('connect', () => {
-  console.log('Connected to Redis');
-});
-
-export default redisConnection;
+export default createRedisConnection();

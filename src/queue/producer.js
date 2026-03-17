@@ -1,11 +1,11 @@
 import { Queue } from 'bullmq';
-import redisConnection from '../config/redis.js';
+import { createRedisConnection } from '../config/redis.js';
 import config from '../config/index.js';
 
 const EXECUTION_QUEUE_NAME = 'code-execution';
 
 const executionQueue = new Queue(EXECUTION_QUEUE_NAME, {
-  connection: redisConnection,
+  connection: createRedisConnection(),
   defaultJobOptions: {
     attempts: config.QUEUE?.ATTEMPTS || 3,
     backoff: {

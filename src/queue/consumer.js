@@ -1,5 +1,5 @@
 import { Worker } from 'bullmq';
-import redisConnection from '../config/redis.js';
+import { createRedisConnection } from '../config/redis.js';
 import executionService from '../services/execution.service.js';
 import config from '../config/index.js';
 
@@ -11,12 +11,12 @@ const EXECUTION_QUEUE_NAME = 'code-execution';
  */
 const initConsumer = (processor) => {
   const worker = new Worker(EXECUTION_QUEUE_NAME, processor, {
-    connection: redisConnection,
+    connection: createRedisConnection(),
     concurrency: config.QUEUE?.CONCURRENCY || 5, // Fallback to 5
   });
 
   worker.on('completed', (job) => {
-    console.log(`Job ${job.id} completed successfully`);
+    // console.log(`Job ${job.id} completed successfully`);
   });
 
   worker.on('failed', async (job, error) => {
@@ -33,7 +33,7 @@ const initConsumer = (processor) => {
     }
   });
 
-  console.log('BullMQ Consumer initialized and listening for jobs...');
+  // console.log('BullMQ Consumer initialized and listening for jobs...');
   return worker;
 };
 
